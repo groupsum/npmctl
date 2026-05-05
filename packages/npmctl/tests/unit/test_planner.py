@@ -33,6 +33,39 @@ def _existing_proxy(**overrides):
     return ExistingResource.from_proxy_host(raw)
 
 
+def _existing_certificate(**overrides):
+    raw = {
+        "id": 11,
+        "name": "wildcard-example",
+        "domain_names": ["*.example.com", "example.com"],
+        "certificate_type": "letsencrypt",
+        "provider": "letsencrypt",
+        "meta": {
+            "managed_by": "npmctl",
+            "owner": "workload-a",
+            "resource_id": "cert.wildcard-example",
+        },
+    }
+    raw.update(overrides)
+    return ExistingResource.from_certificate(raw)
+
+
+def _existing_access_list(**overrides):
+    raw = {
+        "id": 12,
+        "name": "private-admins",
+        "satisfy_any": 0,
+        "items": [],
+        "meta": {
+            "managed_by": "npmctl",
+            "owner": "workload-a",
+            "resource_id": "acl.private-admins",
+        },
+    }
+    raw.update(overrides)
+    return ExistingResource.from_access_list(raw)
+
+
 def test_plan_creates_missing_resources(desired_file) -> None:
     desired = load_desired_state(desired_file)
     plan = compute_plan(desired=desired, existing=ExistingState(), capabilities=Capabilities.full_for_tests())
@@ -50,17 +83,21 @@ def test_plan_updates_owned_drift(desired_file) -> None:
 
 def test_plan_treats_omitted_proxy_defaults_as_converged(desired_file) -> None:
     desired = load_desired_state(desired_file)
-    existing = _existing_proxy(
+    existing_proxy = _existing_proxy(
         access_list_id=None,
         certificate_id=None,
         advanced_config=None,
         hsts_enabled=None,
         hsts_subdomains=None,
     )
-    existing.raw.pop("locations")
+    existing_proxy.raw.pop("locations")
     plan = compute_plan(
         desired=desired,
-        existing=ExistingState(proxy_hosts=(existing,)),
+        existing=ExistingState(
+            proxy_hosts=(existing_proxy,),
+            certificates=(_existing_certificate(),),
+            access_lists=(_existing_access_list(),),
+        ),
         capabilities=Capabilities.empty(),
     )
 
