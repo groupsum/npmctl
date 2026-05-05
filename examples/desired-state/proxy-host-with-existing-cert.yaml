@@ -1,0 +1,13 @@
+---
+apiVersion: npmctl.io/v1
+schemaVersion: 1
+proxy_hosts:
+  - domain_names: [cert-id.example.com]
+    forward_host: app
+    forward_port: 3000
+    certificate_id: 1
+    ssl_forced: 1
+    meta:
+      managed_by: npmctl
+      owner: workload-a
+      resource_id: proxy.cert-id

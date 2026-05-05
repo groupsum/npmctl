@@ -1,0 +1,12 @@
+---
+name: npmctl gated release example
+on:
+  workflow_run:
+    workflows: [Real NPM E2E]
+    types: [completed]
+jobs:
+  release:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Release gate passed"

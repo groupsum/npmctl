@@ -1,0 +1,58 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+import yaml
+
+from npmctl.errors import MigrationError, ValidationError
+from npmctl.loader import load_desired_state
+from npmctl.migrations import migrate_document, migrate_path
+
+
+def test_load_desired_state_full(desired_file: Path) -> None:
+    state = load_desired_state(desired_file)
+    assert len(state.proxy_hosts) == 1
+    assert len(state.certificates) == 1
+    assert len(state.access_lists) == 1
+
+
+def test_load_rejects_missing_schema_header(tmp_path: Path, desired_doc) -> None:
+    desired_doc.pop("apiVersion")
+    path = tmp_path / "bad.yaml"
+    path.write_text(yaml.safe_dump(desired_doc), encoding="utf-8")
+    with pytest.raises(ValidationError):
+        load_desired_state(path)
+
+
+def test_load_rejects_duplicate_domains(tmp_path: Path, desired_doc) -> None:
+    duplicate = dict(desired_doc["proxy_hosts"][0])
+    duplicate["meta"] = {"managed_by": "npmctl", "owner": "workload-a", "resource_id": "proxy.dupe"}
+    desired_doc["proxy_hosts"].append(duplicate)
+    path = tmp_path / "bad.yaml"
+    path.write_text(yaml.safe_dump(desired_doc), encoding="utf-8")
+    with pytest.raises(ValidationError, match="duplicate proxy host domain"):
+        load_desired_state(path)
+
+
+def test_migrate_legacy_document_adds_v1_headers() -> None:
+    migrated, changed, before = migrate_document({"proxy_hosts": []})
+    assert changed is True
+    assert before is None
+    assert migrated["apiVersion"] == "npmctl.io/v1"
+    assert migrated["schemaVersion"] == 1
+
+
+def test_migrate_path_check_and_write(tmp_path: Path) -> None:
+    path = tmp_path / "legacy.yaml"
+    path.write_text("proxy_hosts: []\n", encoding="utf-8")
+    results = migrate_path(path, write=False)
+    assert results[0].changed is True
+    assert "apiVersion" not in path.read_text()
+    migrate_path(path, write=True)
+    assert "apiVersion" in path.read_text()
+
+
+def test_migrate_rejects_unknown_future_version() -> None:
+    with pytest.raises(MigrationError):
+        migrate_document({"apiVersion": "npmctl.io/v1", "schemaVersion": 999})

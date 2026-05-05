@@ -1,0 +1,6 @@
+{
+  "schema_version": "2.10.4",
+  "proxy_hosts": {"list": true, "create": true, "get": true, "update": true, "delete": true, "update_method": "put"},
+  "certificates": {"list": true, "create": true, "get": true, "update": true, "delete": true, "update_method": "put"},
+  "access_lists": {"list": true, "create": true, "get": true, "update": true, "delete": true, "update_method": "put"}
+}

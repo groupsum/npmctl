@@ -1,0 +1,25 @@
+"""NPM REST endpoint contracts used by npmctl."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from npmctl.models import ResourceKind
+
+
+@dataclass(frozen=True, slots=True)
+class ResourceContract:
+    """REST path contract for a managed resource kind."""
+
+    kind: ResourceKind
+    collection_path: str
+
+    def item_path(self, resource_id: int) -> str:
+        return f"{self.collection_path}/{resource_id}"
+
+
+CONTRACTS: dict[ResourceKind, ResourceContract] = {
+    ResourceKind.PROXY_HOST: ResourceContract(ResourceKind.PROXY_HOST, "/nginx/proxy-hosts"),
+    ResourceKind.CERTIFICATE: ResourceContract(ResourceKind.CERTIFICATE, "/nginx/certificates"),
+    ResourceKind.ACCESS_LIST: ResourceContract(ResourceKind.ACCESS_LIST, "/nginx/access-lists"),
+}

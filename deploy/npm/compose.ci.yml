@@ -1,0 +1,23 @@
+---
+services:
+  npm:
+    image: jc21/nginx-proxy-manager:2.10.4
+    ports:
+      - "8080:80"
+      - "8181:81"
+      - "8443:443"
+    environment:
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-admin@example.com}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-changeme}
+    volumes:
+      - npm-ci-data:/data
+      - npm-ci-letsencrypt:/etc/letsencrypt
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:81/api/"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+
+volumes:
+  npm-ci-data: {}
+  npm-ci-letsencrypt: {}

@@ -1,0 +1,25 @@
+---
+proxy_hosts:
+  - domain_names:
+      - app.example.com
+    forward_scheme: http
+    forward_host: app
+    forward_port: 3000
+    enabled: 1
+    ssl_forced: 1
+    http2_support: 1
+    allow_websocket_upgrade: 1
+    block_exploits: 1
+    caching_enabled: 0
+    hsts_enabled: 0
+    hsts_subdomains: 0
+    certificate_id: 0
+    access_list_id: 0
+    advanced_config: ""
+    locations: []
+    use_default_location: true
+    ipv6: true
+    meta:
+      managed_by: npmctl
+      owner: workload-a
+      resource_id: npmctl.proxy-host.workload-a.app

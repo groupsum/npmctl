@@ -1,0 +1,49 @@
+[project]
+name = "npmctl"
+version = "0.2.0"
+description = "Owner-scoped plan/apply/adopt controller for Nginx Proxy Manager resources."
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = "MIT"
+authors = [{ name = "npmctl contributors" }]
+keywords = [
+  "nginx-proxy-manager",
+  "reverse-proxy",
+  "gitops",
+  "controller",
+  "ssl-certificates",
+  "access-lists",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: System Administrators",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+  "Topic :: System :: Systems Administration",
+  "Typing :: Typed",
+]
+dependencies = [
+  "PyYAML>=6.0.2",
+  "requests>=2.32.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/example/npmctl"
+Documentation = "https://github.com/example/npmctl/tree/main/docs"
+Issues = "https://github.com/example/npmctl/issues"
+Repository = "https://github.com/example/npmctl"
+
+[project.scripts]
+npmctl = "npmctl.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.11.8,<0.12"]
+build-backend = "uv_build"

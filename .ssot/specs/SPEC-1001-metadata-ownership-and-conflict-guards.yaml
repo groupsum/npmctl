@@ -1,0 +1,20 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1001"
+number: 1001
+slug: "metadata-ownership-and-conflict-guards"
+title: "Metadata ownership and conflict guards"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Spec: npmctl shall require meta.managed_by=npmctl plus stable owner and resource_id values, reject unmanaged domain collisions, reject foreign ownership, and reject owned drift when updates are unavailable."
+supersedes: []
+superseded_by: []
+status_notes: []
+references: []
+body: |-
+  Spec: npmctl shall require meta.managed_by=npmctl plus stable owner and resource_id values, reject unmanaged domain collisions, reject foreign ownership, and reject owned drift when updates are unavailable.
+spec_kind: "normative"
+adr_ids:
+  - "adr:1001"

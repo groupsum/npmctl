@@ -1,0 +1,17 @@
+schema_version: "0.2.0"
+kind: "adr"
+id: "adr:1000"
+number: 1000
+slug: "create-only-reconciliation"
+title: "Use create-only reconciliation for NPM proxy hosts"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Decision: npmctl creates missing proxy hosts and refuses update/delete behavior until those API contracts are explicitly modeled. Rationale: create-only semantics protect multi-workload integrity and avoid silent overwrites."
+supersedes: []
+superseded_by: []
+status_notes: []
+references: []
+body: |-
+  Decision: npmctl creates missing proxy hosts and refuses update/delete behavior until those API contracts are explicitly modeled. Rationale: create-only semantics protect multi-workload integrity and avoid silent overwrites.

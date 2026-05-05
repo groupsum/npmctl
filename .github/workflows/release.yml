@@ -1,0 +1,37 @@
+---
+name: Release
+
+on:
+  workflow_run:
+    workflows: [Real NPM E2E]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: npmctl-release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-uv-python
+      - uses: ./.github/actions/npmctl-release-build
+
+  publish:
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'v')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: npmctl-dist
+          path: dist
+      - uses: astral-sh/setup-uv@v5
+      - run: uv publish

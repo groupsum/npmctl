@@ -1,0 +1,11 @@
+---
+apiVersion: npmctl.io/v1
+schemaVersion: 1
+proxy_hosts:
+  - domain_names: [minimal.example.com]
+    forward_host: minimal
+    forward_port: 8080
+    meta:
+      managed_by: npmctl
+      owner: workload-a
+      resource_id: proxy.minimal

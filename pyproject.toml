@@ -1,0 +1,66 @@
+[project]
+name = "npmctl-workspace"
+version = "0.2.0"
+description = "Workspace root for npmctl, an owner-scoped Nginx Proxy Manager controller."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/npmctl"]
+
+[dependency-groups]
+dev = [
+  "build>=1.2.2",
+  "coverage[toml]>=7.8.0",
+  "pytest>=8.3.0",
+  "pytest-cov>=6.0.0",
+  "PyYAML>=6.0.2",
+  "requests>=2.32.0",
+  "ruff>=0.12.0",
+  "ssot-registry==0.2.13",
+  "yamllint>=1.35.0",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+src = ["packages/npmctl/src", "packages/npmctl/tests", "scripts", "tools"]
+
+[tool.ruff.lint]
+select = ["B", "C4", "E", "F", "I", "PT", "PTH", "RUF", "SIM", "UP", "W"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"packages/npmctl/tests/**/*.py" = ["PT011", "RUF012", "PLC0415"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers --strict-config --cov=npmctl --cov-report=term-missing"
+testpaths = ["packages/npmctl/tests"]
+pythonpath = ["packages/npmctl/src"]
+markers = [
+  "integration: integration tests using a local fake NPM API server",
+  "npm: tests against a real Nginx Proxy Manager instance; opt in with NPMCTL_REAL_NPM=1",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["npmctl"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+fail_under = 70
+exclude_lines = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+  "if __name__ == .__main__.:",
+]

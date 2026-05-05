@@ -1,0 +1,24 @@
+---
+apiVersion: npmctl.io/v1
+schemaVersion: 1
+certificates:
+  - name: wildcard-example
+    domain_names: ["*.example.com", example.com]
+    certificate_type: letsencrypt
+    api_payload:
+      provider: letsencrypt
+      dns_challenge: true
+    meta:
+      managed_by: npmctl
+      owner: workload-a
+      resource_id: cert.wildcard-example
+proxy_hosts:
+  - domain_names: [wildcard-app.example.com]
+    forward_host: app
+    forward_port: 3000
+    certificate_ref: cert.wildcard-example
+    ssl_forced: 1
+    meta:
+      managed_by: npmctl
+      owner: workload-a
+      resource_id: proxy.wildcard-app

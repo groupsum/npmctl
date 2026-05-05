@@ -1,0 +1,20 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1000"
+number: 1000
+slug: "create-only-controller-contract"
+title: "Create-only controller contract"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Spec: npmctl shall authenticate, list proxy hosts, compute a plan, and create missing proxy hosts. It shall not update or delete proxy hosts in this release."
+supersedes: []
+superseded_by: []
+status_notes: []
+references: []
+body: |-
+  Spec: npmctl shall authenticate, list proxy hosts, compute a plan, and create missing proxy hosts. It shall not update or delete proxy hosts in this release.
+spec_kind: "normative"
+adr_ids:
+  - "adr:1000"

@@ -1,0 +1,12 @@
+---
+name: npmctl release build
+description: Build npmctl wheel and source distribution.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: uv build --package npmctl
+    - uses: actions/upload-artifact@v4
+      with:
+        name: npmctl-dist
+        path: dist/*

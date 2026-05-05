@@ -1,0 +1,16 @@
+---
+extends: default
+rules:
+  line-length:
+    max: 160
+    level: warning
+  truthy:
+    allowed-values: ["true", "false", "on", "off"]
+  comments:
+    min-spaces-from-content: 1
+ignore: |
+  .venv/
+  dist/
+  .ssot/adr/
+  .ssot/specs/
+  .ssot/schemas/

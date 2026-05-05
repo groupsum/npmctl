@@ -1,0 +1,17 @@
+schema_version: "0.2.0"
+kind: "adr"
+id: "adr:1001"
+number: 1001
+slug: "metadata-ownership-markers"
+title: "Require npmctl metadata ownership markers"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Decision: every desired proxy host must provide meta.managed_by, meta.owner, and meta.resource_id. Rationale: exact metadata identity is required to distinguish safe no-ops from manual or foreign resources."
+supersedes: []
+superseded_by: []
+status_notes: []
+references: []
+body: |-
+  Decision: every desired proxy host must provide meta.managed_by, meta.owner, and meta.resource_id. Rationale: exact metadata identity is required to distinguish safe no-ops from manual or foreign resources.

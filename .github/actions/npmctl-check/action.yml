@@ -1,0 +1,14 @@
+---
+name: npmctl quality check
+description: Run linting, formatting, YAML linting, and pytest.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: uv run ruff check .
+    - shell: bash
+      run: uv run ruff format --check .
+    - shell: bash
+      run: uv run yamllint .
+    - shell: bash
+      run: uv run pytest

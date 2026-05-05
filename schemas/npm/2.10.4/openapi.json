@@ -1,0 +1,18 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Nginx Proxy Manager API",
+    "version": "2.10.4"
+  },
+  "paths": {
+    "/": {"get": {"operationId": "health"}},
+    "/schema": {"get": {"operationId": "schema"}},
+    "/tokens": {"get": {"operationId": "refreshToken"}, "post": {"operationId": "requestToken"}},
+    "/nginx/proxy-hosts": {"get": {"operationId": "getProxyHosts"}, "post": {"operationId": "createProxyHost"}},
+    "/nginx/proxy-hosts/{id}": {"get": {"operationId": "getProxyHost"}, "put": {"operationId": "updateProxyHost"}, "delete": {"operationId": "deleteProxyHost"}},
+    "/nginx/certificates": {"get": {"operationId": "getCertificates"}, "post": {"operationId": "createCertificate"}},
+    "/nginx/certificates/{id}": {"get": {"operationId": "getCertificate"}, "put": {"operationId": "updateCertificate"}, "delete": {"operationId": "deleteCertificate"}},
+    "/nginx/access-lists": {"get": {"operationId": "getAccessLists"}, "post": {"operationId": "createAccessList"}},
+    "/nginx/access-lists/{id}": {"get": {"operationId": "getAccessList"}, "put": {"operationId": "updateAccessList"}, "delete": {"operationId": "deleteAccessList"}}
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "npmctl",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "OS Independent",
+  "description": "Safe declarative proxy host automation for Nginx Proxy Manager using create-only reconciliation and metadata ownership guards.",
+  "programmingLanguage": "Python",
+  "runtimePlatform": "Python 3.11+",
+  "softwareRequirements": "Nginx Proxy Manager API access",
+  "keywords": [
+    "Nginx Proxy Manager",
+    "proxy host automation",
+    "GitOps",
+    "reverse proxy",
+    "Docker",
+    "GitHub Actions",
+    "Python CLI"
+  ]
+}
