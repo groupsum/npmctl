@@ -4,7 +4,7 @@ version = "0.2.0"
 description = "Owner-scoped plan/apply/adopt controller for Nginx Proxy Manager resources."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
-license = "MIT"
+license = "Apache-2.0"
 authors = [{ name = "npmctl contributors" }]
 keywords = [
   "nginx-proxy-manager",
@@ -19,7 +19,7 @@ classifiers = [
   "Environment :: Console",
   "Intended Audience :: Developers",
   "Intended Audience :: System Administrators",
-  "License :: OSI Approved :: MIT License",
+  "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
