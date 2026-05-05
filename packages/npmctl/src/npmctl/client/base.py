@@ -12,7 +12,7 @@ import requests
 from npmctl.client.contracts import CONTRACTS
 from npmctl.errors import ApiError, CapabilityError
 from npmctl.models import ExistingResource, ExistingState, ResourceKind
-from npmctl.schema import Capabilities
+from npmctl.schema import Capabilities, ResourceCapabilities
 
 _TRANSIENT_STATUSES = frozenset({502, 503, 504})
 
@@ -41,7 +41,7 @@ class NpmClient:
 
     def refresh(self) -> None:
         try:
-            data = self._request("get", "/tokens", authenticated=True)
+            data = self._request("get", "/tokens", authenticated=True, ensure_token=False)
         except ApiError:
             self.login()
             return
@@ -53,7 +53,10 @@ class NpmClient:
         return self._request("get", "/schema", authenticated=False)
 
     def capabilities(self) -> Capabilities:
-        return Capabilities.from_openapi(self.openapi_schema())
+        caps = Capabilities.from_openapi(self.openapi_schema())
+        if caps.schema_version == "2.10.4":
+            return _with_npm_2104_compatibility(caps)
+        return caps
 
     def list_resource(self, kind: ResourceKind) -> tuple[ExistingResource, ...]:
         contract = CONTRACTS[kind]
@@ -106,8 +109,9 @@ class NpmClient:
         authenticated: bool,
         json: Mapping[str, Any] | None = None,
         allow_empty: bool = False,
+        ensure_token: bool = True,
     ) -> Any:
-        if authenticated:
+        if authenticated and ensure_token:
             self._ensure_token()
         headers = {"Content-Type": "application/json"}
         if authenticated and self._token:
@@ -132,7 +136,7 @@ class NpmClient:
                 raise last_error from exc
             if response.status_code in _TRANSIENT_STATUSES and attempt + 1 < attempts:
                 last_error = ApiError(
-                    f"{method.upper()} {path} failed: HTTP {response.status_code}: {_redact(response.text)}"
+                    f"{method.upper()} {path} failed: HTTP {response.status_code}: {self._redact(response.text)}"
                 )
                 time.sleep(0.5 * (attempt + 1))
                 continue
@@ -142,7 +146,9 @@ class NpmClient:
                 raise last_error
             raise ApiError(f"{method.upper()} {path} request did not complete")
         if response.status_code < 200 or response.status_code >= 300:
-            raise ApiError(f"{method.upper()} {path} failed: HTTP {response.status_code}: {_redact(response.text)}")
+            raise ApiError(
+                f"{method.upper()} {path} failed: HTTP {response.status_code}: {self._redact(response.text)}"
+            )
         if allow_empty and not response.content:
             return None
         try:
@@ -151,6 +157,9 @@ class NpmClient:
             if allow_empty:
                 return {}
             raise ApiError(f"{method.upper()} {path} returned invalid JSON") from exc
+
+    def _redact(self, text: str) -> str:
+        return _redact(text, self.identity, self.secret, self._token)
 
 
 def _extract_token(data: Any) -> tuple[str, int]:
@@ -191,8 +200,33 @@ def _parse_created(kind: ResourceKind, data: Any) -> ExistingResource:
     raise CapabilityError(f"unsupported resource kind: {kind}")
 
 
-def _redact(text: str) -> str:
+def _with_npm_2104_compatibility(caps: Capabilities) -> Capabilities:
+    """Fill endpoints that NPM 2.10.4 implements but omits from /schema."""
+
+    proxy = caps.proxy_hosts
+    if not (proxy.list and proxy.create and proxy.update and proxy.delete):
+        proxy = ResourceCapabilities(list=True, create=True, get=True, update=True, delete=True, update_method="put")
+    certs = caps.certificates
+    if not (certs.list and certs.create and certs.delete):
+        certs = ResourceCapabilities(list=True, create=True, get=False, update=False, delete=True)
+    access_lists = caps.access_lists
+    if not (access_lists.list and access_lists.create and access_lists.update and access_lists.delete):
+        access_lists = ResourceCapabilities(
+            list=True, create=True, get=True, update=True, delete=True, update_method="put"
+        )
+    return Capabilities(
+        proxy_hosts=proxy,
+        certificates=certs,
+        access_lists=access_lists,
+        schema_version=caps.schema_version,
+    )
+
+
+def _redact(text: str, *secrets: str | None) -> str:
     redacted = text
+    for secret in secrets:
+        if secret:
+            redacted = redacted.replace(secret, "***")
     for marker in ("token", "secret", "password"):
         redacted = redacted.replace(marker, f"{marker[0]}***")
     return redacted[:1000]

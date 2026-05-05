@@ -1,0 +1,93 @@
+from __future__ import annotations
+
+import os
+import uuid
+from pathlib import Path
+from typing import Any
+
+import pytest
+import yaml
+
+from npmctl.client import NpmClient
+from npmctl.errors import ApiError
+from npmctl.models import ExistingResource, ResourceKind
+
+
+def require_real_npm() -> None:
+    if os.environ.get("NPMCTL_REAL_NPM") != "1":
+        pytest.skip("real NPM E2E is opt-in")
+
+
+def client() -> NpmClient:
+    return NpmClient(
+        base_url=os.environ["NPM_BASE_URL"],
+        identity=os.environ["NPM_IDENTITY"],
+        secret=os.environ["NPM_SECRET"],
+        timeout_s=20,
+    )
+
+
+def common_args() -> list[str]:
+    return [
+        "--base-url",
+        os.environ["NPM_BASE_URL"],
+        "--identity",
+        os.environ["NPM_IDENTITY"],
+        "--secret",
+        os.environ["NPM_SECRET"],
+    ]
+
+
+def marker(prefix: str = "npmctl-ci") -> str:
+    return f"{prefix}-{uuid.uuid4().hex[:10]}"
+
+
+def write_doc(tmp_path: Path, doc: dict[str, Any]) -> Path:
+    path = tmp_path / f"{uuid.uuid4().hex}.yaml"
+    path.write_text(yaml.safe_dump(doc, sort_keys=False), encoding="utf-8")
+    return path
+
+
+def cleanup_marker(npm: NpmClient, text: str) -> None:
+    caps = npm.capabilities()
+    state = npm.existing_state(include_certificates=caps.certificates.list, include_access_lists=caps.access_lists.list)
+    for item in state.proxy_hosts:
+        if _matches(item, text) and caps.proxy_hosts.delete:
+            best_effort_delete(npm, ResourceKind.PROXY_HOST, item.id)
+    for item in state.access_lists:
+        if _matches(item, text) and caps.access_lists.delete:
+            best_effort_delete(npm, ResourceKind.ACCESS_LIST, item.id)
+    for item in state.certificates:
+        if _matches(item, text) and caps.certificates.delete:
+            best_effort_delete(npm, ResourceKind.CERTIFICATE, item.id)
+
+
+def proxy_by_resource_id(npm: NpmClient, resource_id: str) -> ExistingResource:
+    matches = [
+        item
+        for item in npm.list_resource(ResourceKind.PROXY_HOST)
+        if item.identity and item.identity.resource_id == resource_id
+    ]
+    assert len(matches) == 1
+    return matches[0]
+
+
+def list_by_name(npm: NpmClient, kind: ResourceKind, name: str) -> ExistingResource:
+    matches = [item for item in npm.list_resource(kind) if item.name == name]
+    assert len(matches) == 1
+    return matches[0]
+
+
+def best_effort_delete(npm: NpmClient, kind: ResourceKind, resource_id: int) -> None:
+    try:
+        npm.delete_resource(kind, resource_id)
+    except ApiError:
+        return
+
+
+def _matches(item: ExistingResource, text: str) -> bool:
+    if item.identity and (item.identity.owner == text or text in item.identity.resource_id):
+        return True
+    if item.name and text in item.name:
+        return True
+    return any(text in domain for domain in item.domain_names)

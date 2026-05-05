@@ -106,10 +106,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         write_error(args.output, "conflict_error", str(exc))
         return EXIT_CONFLICT
     except CapabilityError as exc:
-        write_error(args.output, "capability_error", str(exc))
+        write_error(args.output, "capability_error", _redact_cli_message(str(exc), args))
         return EXIT_CAPABILITY
     except ApiError as exc:
-        write_error(args.output, "api_error", str(exc))
+        write_error(args.output, "api_error", _redact_cli_message(str(exc), args))
         return EXIT_API
     except NpmctlError as exc:
         write_error(args.output, "npmctl_error", str(exc))
@@ -124,6 +124,8 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
         return EXIT_OK
 
     if args.command == "migrate":
+        if args.write and args.check:
+            raise ValidationError("migrate --write and --check cannot be combined")
         results = migrate_path(args.path, write=args.write)
         changed = [result for result in results if result.changed]
         payload = {
@@ -232,6 +234,14 @@ def _format_validate_text(payload: dict[str, Any]) -> str:
         f"certificates: {payload['certificates']}\n"
         f"access lists: {payload['access_lists']}"
     )
+
+
+def _redact_cli_message(message: str, args: argparse.Namespace) -> str:
+    redacted = message
+    for value in (getattr(args, "identity", None), getattr(args, "secret", None)):
+        if value:
+            redacted = redacted.replace(str(value), "***")
+    return redacted
 
 
 if __name__ == "__main__":  # pragma: no cover

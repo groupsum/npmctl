@@ -349,14 +349,10 @@ class DesiredCertificate:
 
     def to_payload(self) -> dict[str, Any]:
         payload = dict(self.api_payload)
-        payload.update(
-            {
-                "name": self.name,
-                "domain_names": list(self.domain_names),
-                "certificate_type": self.certificate_type,
-                "meta": dict(self.meta),
-            }
-        )
+        payload.setdefault("nice_name", self.name)
+        payload.setdefault("provider", self.certificate_type)
+        payload["domain_names"] = list(self.domain_names)
+        payload.setdefault("meta", dict(self.meta))
         return payload
 
     def comparable_payload(self) -> dict[str, Any]:

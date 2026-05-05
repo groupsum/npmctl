@@ -1,9 +1,17 @@
 from __future__ import annotations
 
 from npmctl.loader import load_desired_state
-from npmctl.models import ExistingResource, ExistingState, ResourceKind
+from npmctl.models import (
+    DesiredAccessList,
+    DesiredCertificate,
+    DesiredProxyHost,
+    DesiredState,
+    ExistingResource,
+    ExistingState,
+    ResourceKind,
+)
 from npmctl.planner import PlannerOptions, compute_plan
-from npmctl.schema import Capabilities
+from npmctl.schema import Capabilities, ResourceCapabilities
 
 
 def _existing_proxy(**overrides):
@@ -37,6 +45,7 @@ def _existing_certificate(**overrides):
     raw = {
         "id": 11,
         "name": "wildcard-example",
+        "nice_name": "wildcard-example",
         "domain_names": ["*.example.com", "example.com"],
         "certificate_type": "letsencrypt",
         "provider": "letsencrypt",
@@ -171,3 +180,184 @@ def test_plan_detects_missing_update_capability(desired_file) -> None:
     caps = Capabilities.empty()
     plan = compute_plan(desired=desired, existing=existing, capabilities=caps)
     assert any(conflict.code == "missing_update_capability" for conflict in plan.conflicts)
+
+
+def test_plan_detects_duplicate_existing_non_proxy_identity() -> None:
+    cert_a = _existing_certificate(id=20)
+    cert_b = _existing_certificate(id=21, name="wildcard-example-copy")
+    acl_a = _existing_access_list(id=30)
+    acl_b = _existing_access_list(id=31, name="private-admins-copy")
+
+    plan = compute_plan(
+        desired=DesiredState(),
+        existing=ExistingState(certificates=(cert_a, cert_b), access_lists=(acl_a, acl_b)),
+        capabilities=Capabilities.full_for_tests(),
+    )
+
+    conflicts = [conflict for conflict in plan.conflicts if conflict.code == "duplicate_existing_resource_id"]
+    assert {conflict.kind for conflict in conflicts} == {ResourceKind.CERTIFICATE, ResourceKind.ACCESS_LIST}
+
+
+def test_plan_detects_duplicate_existing_proxy_domains() -> None:
+    first = _existing_proxy(id=20)
+    second = _existing_proxy(
+        id=21,
+        meta={"managed_by": "npmctl", "owner": "workload-b", "resource_id": "proxy.other"},
+    )
+
+    plan = compute_plan(
+        desired=DesiredState(),
+        existing=ExistingState(proxy_hosts=(first, second)),
+        capabilities=Capabilities.full_for_tests(),
+    )
+
+    assert any(conflict.code == "duplicate_existing_domain" for conflict in plan.conflicts)
+
+
+def test_plan_owner_filter_limits_multiple_desired_owners() -> None:
+    desired = DesiredState(
+        proxy_hosts=(
+            DesiredProxyHost.from_mapping(
+                {
+                    "domain_names": ["a.example.com"],
+                    "forward_host": "a",
+                    "forward_port": 3000,
+                    "meta": {"managed_by": "npmctl", "owner": "workload-a", "resource_id": "proxy.a"},
+                },
+                path="a",
+            ),
+            DesiredProxyHost.from_mapping(
+                {
+                    "domain_names": ["b.example.com"],
+                    "forward_host": "b",
+                    "forward_port": 3000,
+                    "meta": {"managed_by": "npmctl", "owner": "workload-b", "resource_id": "proxy.b"},
+                },
+                path="b",
+            ),
+        )
+    )
+
+    plan = compute_plan(
+        desired=desired,
+        existing=ExistingState(),
+        capabilities=Capabilities.full_for_tests(),
+        options=PlannerOptions(owner="workload-a"),
+    )
+
+    assert plan.ok
+    assert [operation.resource_id for operation in plan.operations] == ["proxy.a"]
+
+
+def test_plan_prune_owned_only_targets_selected_owner() -> None:
+    existing_a = _existing_proxy(
+        domain_names=["a.example.com"],
+        meta={"managed_by": "npmctl", "owner": "workload-a", "resource_id": "proxy.a"},
+    )
+    existing_b = _existing_proxy(
+        id=11,
+        domain_names=["b.example.com"],
+        meta={"managed_by": "npmctl", "owner": "workload-b", "resource_id": "proxy.b"},
+    )
+
+    plan = compute_plan(
+        desired=DesiredState(),
+        existing=ExistingState(proxy_hosts=(existing_a, existing_b)),
+        capabilities=Capabilities.full_for_tests(),
+        options=PlannerOptions(owner="workload-a", prune_owned=True),
+    )
+
+    assert [operation.resource_id for operation in plan.by_action("delete")] == ["proxy.a"]
+
+
+def test_plan_detects_certificate_and_access_list_identity_drift_and_foreign_ownership() -> None:
+    desired = DesiredState(
+        certificates=(
+            DesiredCertificate.from_mapping(
+                {
+                    "name": "desired-cert",
+                    "domain_names": ["example.com"],
+                    "meta": {"managed_by": "npmctl", "owner": "workload-a", "resource_id": "cert.one"},
+                },
+                path="cert",
+            ),
+        ),
+        access_lists=(
+            DesiredAccessList.from_mapping(
+                {
+                    "name": "desired-acl",
+                    "meta": {"managed_by": "npmctl", "owner": "workload-a", "resource_id": "acl.one"},
+                },
+                path="acl",
+            ),
+        ),
+    )
+    drifted_cert = _existing_certificate(
+        id=44,
+        name="old-cert",
+        meta={"managed_by": "npmctl", "owner": "workload-a", "resource_id": "cert.one"},
+    )
+    foreign_acl = _existing_access_list(
+        id=45,
+        name="desired-acl",
+        meta={"managed_by": "npmctl", "owner": "workload-b", "resource_id": "acl.other"},
+    )
+
+    plan = compute_plan(
+        desired=desired,
+        existing=ExistingState(certificates=(drifted_cert,), access_lists=(foreign_acl,)),
+        capabilities=Capabilities.full_for_tests(),
+    )
+
+    assert any(
+        conflict.code == "resource_id_drift" and conflict.kind == ResourceKind.CERTIFICATE
+        for conflict in plan.conflicts
+    )
+    assert any(
+        conflict.code == "foreign_owner" and conflict.kind == ResourceKind.ACCESS_LIST for conflict in plan.conflicts
+    )
+
+
+def test_plan_checks_partial_capabilities_by_resource_type() -> None:
+    desired = DesiredState(
+        certificates=(
+            DesiredCertificate.from_mapping(
+                {
+                    "name": "cert-one",
+                    "domain_names": ["example.com"],
+                    "meta": {"managed_by": "npmctl", "owner": "workload-a", "resource_id": "cert.one"},
+                },
+                path="cert",
+            ),
+        ),
+        access_lists=(
+            DesiredAccessList.from_mapping(
+                {
+                    "name": "acl-one",
+                    "meta": {"managed_by": "npmctl", "owner": "workload-a", "resource_id": "acl.one"},
+                },
+                path="acl",
+            ),
+        ),
+        proxy_hosts=(
+            DesiredProxyHost.from_mapping(
+                {
+                    "domain_names": ["app.example.com"],
+                    "forward_host": "app",
+                    "forward_port": 3000,
+                    "meta": {"managed_by": "npmctl", "owner": "workload-a", "resource_id": "proxy.one"},
+                },
+                path="proxy",
+            ),
+        ),
+    )
+    caps = Capabilities(
+        proxy_hosts=ResourceCapabilities(list=True, create=True),
+        certificates=ResourceCapabilities(list=True, create=False),
+        access_lists=ResourceCapabilities(list=True, create=False),
+    )
+
+    plan = compute_plan(desired=desired, existing=ExistingState(), capabilities=caps)
+
+    assert [operation.kind for operation in plan.by_action("create")] == [ResourceKind.PROXY_HOST]
+    assert {conflict.kind for conflict in plan.conflicts} == {ResourceKind.CERTIFICATE, ResourceKind.ACCESS_LIST}

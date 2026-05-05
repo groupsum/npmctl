@@ -1,21 +1,108 @@
 from __future__ import annotations
 
-import os
+from pathlib import Path
 
 import pytest
 
-from npmctl.client import NpmClient
+from npmctl.cli import main
 from npmctl.models import ResourceKind
+from real_npm_helpers import (
+    best_effort_delete,
+    cleanup_marker,
+    client,
+    common_args,
+    list_by_name,
+    marker,
+    require_real_npm,
+    write_doc,
+)
 
 pytestmark = pytest.mark.npm
 
 
-@pytest.mark.skipif(os.environ.get("NPMCTL_REAL_NPM") != "1", reason="real NPM E2E is opt-in")
-def test_real_npm_access_list_capability_report() -> None:
-    client = NpmClient(
-        base_url=os.environ["NPM_BASE_URL"], identity=os.environ["NPM_IDENTITY"], secret=os.environ["NPM_SECRET"]
-    )
-    caps = client.capabilities()
+def test_real_npm_access_list_create_readback_update_delete_and_proxy_reference(tmp_path: Path) -> None:
+    require_real_npm()
+    npm = client()
+    caps = npm.capabilities()
     if not caps.access_lists.list:
-        pytest.skip("this NPM schema does not expose access-list list")
-    assert isinstance(client.list_resource(ResourceKind.ACCESS_LIST), tuple)
+        pytest.fail("this NPM schema does not expose access-list list")
+    if not caps.access_lists.create:
+        pytest.fail("this NPM schema does not expose access-list create")
+    run = marker()
+    acl_name = f"{run}-acl"
+    cleanup_marker(npm, run)
+    try:
+        desired = {
+            "apiVersion": "npmctl.io/v1",
+            "schemaVersion": 1,
+            "access_lists": [
+                {
+                    "name": acl_name,
+                    "api_payload": {"satisfy_any": 0, "pass_auth": 0, "items": [], "clients": []},
+                    "meta": {"managed_by": "npmctl", "owner": run, "resource_id": f"{run}.acl"},
+                }
+            ],
+            "proxy_hosts": [
+                {
+                    "domain_names": [f"{run}.example.invalid"],
+                    "forward_scheme": "http",
+                    "forward_host": "127.0.0.1",
+                    "forward_port": 8080,
+                    "access_list_ref": f"{run}.acl",
+                    "meta": {"managed_by": "npmctl", "owner": run, "resource_id": f"{run}.proxy"},
+                }
+            ],
+        }
+
+        assert main([*common_args(), "apply", str(write_doc(tmp_path, desired))]) == 0
+
+        acl = list_by_name(npm, ResourceKind.ACCESS_LIST, acl_name)
+        assert acl.raw["satisfy_any"] == 0
+        assert acl.raw.get("items", []) == []
+        assert acl.raw.get("clients", []) == []
+        proxy = [
+            item
+            for item in npm.list_resource(ResourceKind.PROXY_HOST)
+            if item.identity and item.identity.resource_id == f"{run}.proxy"
+        ][0]
+        assert proxy.raw["access_list_id"] == acl.id
+
+        if caps.access_lists.update:
+            updated = npm.update_resource(
+                ResourceKind.ACCESS_LIST,
+                acl.id,
+                {"name": acl_name, "satisfy_any": 1, "pass_auth": 0, "items": [], "clients": []},
+                method=caps.access_lists.update_method or "put",
+            )
+            assert updated.raw["satisfy_any"] == 1
+        if caps.access_lists.delete:
+            best_effort_delete(npm, ResourceKind.PROXY_HOST, proxy.id)
+            assert not [
+                item
+                for item in npm.list_resource(ResourceKind.PROXY_HOST)
+                if item.identity and item.identity.resource_id == f"{run}.proxy"
+            ]
+            assert npm.delete_resource(ResourceKind.ACCESS_LIST, acl.id) is True
+            assert not [item for item in npm.list_resource(ResourceKind.ACCESS_LIST) if item.name == acl_name]
+    finally:
+        cleanup_marker(npm, run)
+
+
+def test_missing_access_list_ref_fails_before_apply(tmp_path: Path) -> None:
+    require_real_npm()
+    run = marker()
+    missing = {
+        "apiVersion": "npmctl.io/v1",
+        "schemaVersion": 1,
+        "proxy_hosts": [
+            {
+                "domain_names": [f"{run}.example.invalid"],
+                "forward_host": "127.0.0.1",
+                "forward_port": 8080,
+                "access_list_ref": "missing-acl",
+                "meta": {"managed_by": "npmctl", "owner": run, "resource_id": f"{run}.proxy"},
+            }
+        ],
+    }
+
+    assert main([*common_args(), "apply", str(write_doc(tmp_path, missing))]) == 2

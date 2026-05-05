@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from npmctl.client import NpmClient
-from npmctl.errors import ConflictError, ValidationError
+from npmctl.errors import ApiError, ConflictError, ValidationError
 from npmctl.metadata import merge_managed_meta
 from npmctl.models import (
     DesiredAccessList,
@@ -94,7 +94,7 @@ class ApplyEngine:
     def _adopt(self, operation: PlanOperation) -> dict[str, Any]:
         desired = _require_desired(operation)
         existing = _require_existing(operation)
-        payload = dict(existing.raw)
+        payload = _updateable_existing_payload(existing)
         payload["meta"] = merge_managed_meta(payload.get("meta"), desired.meta)
         cap = self.capabilities.for_kind(desired.kind)
         updated = self.client.update_resource(desired.kind, existing.id, payload, method=cap.update_method or "put")
@@ -107,15 +107,16 @@ class ApplyEngine:
 
     def _delete(self, operation: PlanOperation) -> dict[str, Any]:
         existing = _require_existing(operation)
-        self.client.delete_resource(existing.kind, existing.id)
+        deleted = self.client.delete_resource(existing.kind, existing.id)
+        if not deleted:
+            raise ApiError(f"delete failed for {existing.kind.value} id={existing.id}")
         resource_id = existing.identity.resource_id if existing.identity else None
         return {"action": "delete", "kind": existing.kind.value, "resource_id": resource_id, "id": existing.id}
 
     def _merge_existing_with_desired(
         self, existing: ExistingResource, desired: DesiredProxyHost | DesiredCertificate | DesiredAccessList
     ) -> dict[str, Any]:
-        payload = dict(existing.raw)
-        payload.update(self._payload_for(desired))
+        payload = self._payload_for(desired)
         payload["meta"] = merge_managed_meta(existing.raw.get("meta"), desired.meta)
         return payload
 
@@ -131,12 +132,10 @@ class ApplyEngine:
             return None
         created = self.created_by_resource_id.get(ref)
         if created is not None:
+            if created.kind != kind:
+                raise ValidationError(f"reference {ref!r} resolved to {created.kind.value}, expected {kind.value}")
             return created.id
-        # Desired references are validated during loading. Existing IDs for referenced
-        # resources are already in plan operations when they are noops/updates; use the
-        # first matching operation from dependency order if available. The CLI uses fresh
-        # list state, so create ordering covers new references.
-        return None
+        raise ValidationError(f"unresolved {kind.value} reference: {ref}")
 
 
 def _ordered_operations(operations: tuple[PlanOperation, ...]) -> list[PlanOperation]:
@@ -161,3 +160,49 @@ def _require_existing(operation: PlanOperation) -> ExistingResource:
     if operation.existing is None:
         raise ValidationError(f"operation {operation.action} requires existing resource")
     return operation.existing
+
+
+def _updateable_existing_payload(existing: ExistingResource) -> dict[str, Any]:
+    fields = {
+        ResourceKind.PROXY_HOST: (
+            "domain_names",
+            "forward_scheme",
+            "forward_host",
+            "forward_port",
+            "certificate_id",
+            "ssl_forced",
+            "hsts_enabled",
+            "hsts_subdomains",
+            "http2_support",
+            "block_exploits",
+            "caching_enabled",
+            "allow_websocket_upgrade",
+            "access_list_id",
+            "advanced_config",
+            "enabled",
+            "locations",
+            "meta",
+        ),
+        ResourceKind.ACCESS_LIST: ("name", "satisfy_any", "pass_auth", "items", "clients", "meta"),
+        ResourceKind.CERTIFICATE: ("provider", "nice_name", "domain_names", "meta"),
+    }[existing.kind]
+    payload = {field: existing.raw[field] for field in fields if field in existing.raw}
+    if existing.kind == ResourceKind.PROXY_HOST:
+        defaults = {
+            "access_list_id": 0,
+            "certificate_id": 0,
+            "ssl_forced": 0,
+            "hsts_enabled": 0,
+            "hsts_subdomains": 0,
+            "http2_support": 0,
+            "block_exploits": 0,
+            "caching_enabled": 0,
+            "allow_websocket_upgrade": 0,
+            "advanced_config": "",
+            "enabled": 1,
+            "locations": [],
+        }
+        for field, default in defaults.items():
+            if payload.get(field) is None:
+                payload[field] = default
+    return payload

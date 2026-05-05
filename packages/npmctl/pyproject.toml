@@ -35,10 +35,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/example/npmctl"
-Documentation = "https://github.com/example/npmctl/tree/main/docs"
-Issues = "https://github.com/example/npmctl/issues"
-Repository = "https://github.com/example/npmctl"
+Homepage = "https://github.com/groupsum/npmctl"
+Documentation = "https://github.com/groupsum/npmctl/tree/master/docs"
+Issues = "https://github.com/groupsum/npmctl/issues"
+Repository = "https://github.com/groupsum/npmctl"
 
 [project.scripts]
 npmctl = "npmctl.cli:main"
