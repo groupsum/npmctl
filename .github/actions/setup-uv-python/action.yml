@@ -14,4 +14,8 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
     - shell: bash
+      env:
+        PIP_INDEX_URL: https://pypi.org/simple
+        UV_DEFAULT_INDEX: https://pypi.org/simple
+        UV_INDEX_URL: https://pypi.org/simple
       run: uv sync --all-packages --dev
