@@ -117,7 +117,13 @@ class NpmClient:
         last_error: ApiError | None = None
         for attempt in range(attempts):
             try:
-                response = self.session.request(method.upper(), url, headers=headers, json=json, timeout=self.timeout_s)
+                response = self.session.request(
+                    method.upper(),
+                    url,
+                    headers=headers,
+                    json=json,
+                    timeout=self.timeout_s,
+                )
             except requests.RequestException as exc:
                 last_error = ApiError(f"{method.upper()} {path} transport error: {exc}")
                 if attempt + 1 < attempts:
@@ -125,7 +131,9 @@ class NpmClient:
                     continue
                 raise last_error from exc
             if response.status_code in _TRANSIENT_STATUSES and attempt + 1 < attempts:
-                last_error = ApiError(f"{method.upper()} {path} failed: HTTP {response.status_code}: {_redact(response.text)}")
+                last_error = ApiError(
+                    f"{method.upper()} {path} failed: HTTP {response.status_code}: {_redact(response.text)}"
+                )
                 time.sleep(0.5 * (attempt + 1))
                 continue
             break
