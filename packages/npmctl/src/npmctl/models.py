@@ -293,8 +293,6 @@ class DesiredProxyHost:
             "locations": list(self.locations),
             "hsts_enabled": self.hsts_enabled,
             "hsts_subdomains": self.hsts_subdomains,
-            "use_default_location": self.use_default_location,
-            "ipv6": self.ipv6,
         }
         return payload
 
