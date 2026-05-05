@@ -22,7 +22,7 @@ runs:
         NPM_BASE_URL: http://127.0.0.1:8181/api
         NPM_IDENTITY: admin@example.com
         NPM_SECRET: changeme
-      run: uv run pytest -m npm packages/npmctl/tests/e2e
+      run: uv run pytest --no-cov -m npm packages/npmctl/tests/e2e
     - if: always()
       shell: bash
       run: docker compose -f deploy/npm/compose.ci.yml logs --no-color > npm-e2e-container.log || true
