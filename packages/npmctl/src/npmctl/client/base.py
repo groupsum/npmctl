@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Mapping
+from datetime import UTC, datetime
 from typing import Any
 
 import requests
@@ -136,11 +137,20 @@ def _extract_token(data: Any) -> tuple[str, int]:
     if not isinstance(token, str) or not token:
         raise ApiError("token response missing token")
     if isinstance(expires, str):
-        # NPM sometimes returns ISO strings from login-as-user endpoints; tokens are normally unix seconds.
-        raise ApiError("token response expires must be a unix timestamp")
+        expires = _parse_iso_expiry(expires)
     if isinstance(expires, bool) or not isinstance(expires, int | float):
         raise ApiError("token response missing numeric expires")
     return token, int(expires)
+
+
+def _parse_iso_expiry(value: str) -> int:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ApiError("token response expires must be numeric or ISO-8601") from exc
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    return int(parsed.timestamp())
 
 
 def _parse_created(kind: ResourceKind, data: Any) -> ExistingResource:
