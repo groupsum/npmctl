@@ -15,11 +15,17 @@ def test_proxy_host_happy_path_normalizes_domains() -> None:
             "forward_host": "app",
             "forward_port": 3000,
             "meta": META,
+            "use_default_location": False,
+            "ipv6": False,
         },
         path="host",
     )
+    payload = host.to_payload()
+
     assert host.domain_names == ("app.example.com",)
-    assert host.to_payload()["access_list_id"] == 0
+    assert payload["access_list_id"] == 0
+    assert "use_default_location" not in payload
+    assert "ipv6" not in payload
 
 
 def test_proxy_host_rejects_conflicting_id_and_ref() -> None:
