@@ -87,8 +87,16 @@ def test_plan_treats_omitted_proxy_defaults_as_converged(desired_file) -> None:
         access_list_id=None,
         certificate_id=None,
         advanced_config=None,
+        caching_enabled="0",
+        ssl_forced="1",
         hsts_enabled=None,
         hsts_subdomains=None,
+        meta={
+            "managed_by": "npmctl",
+            "owner": "workload-a",
+            "resource_id": "proxy.app",
+            "nginx_online": True,
+        },
     )
     existing_proxy.raw.pop("locations")
     plan = compute_plan(
