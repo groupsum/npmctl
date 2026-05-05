@@ -1,37 +1,122 @@
 # npmctl
 
-[![CI](https://github.com/example/npmctl/actions/workflows/ci.yml/badge.svg)](https://github.com/example/npmctl/actions/workflows/ci.yml)
-[![Real NPM E2E](https://github.com/example/npmctl/actions/workflows/e2e-npm.yml/badge.svg)](https://github.com/example/npmctl/actions/workflows/e2e-npm.yml)
+[![CI](https://github.com/groupsum/npmctl/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/groupsum/npmctl/actions/workflows/ci.yml)
+[![Real NPM E2E](https://github.com/groupsum/npmctl/actions/workflows/e2e-npm.yml/badge.svg?branch=master)](https://github.com/groupsum/npmctl/actions/workflows/e2e-npm.yml)
 [![PyPI](https://img.shields.io/pypi/v/npmctl.svg)](https://pypi.org/project/npmctl/)
 
-`npmctl` is an owner-scoped GitOps controller for Nginx Proxy Manager. It provides `validate`, `migrate`, `schema`, `plan`, `apply`, and `adopt` commands for proxy hosts, SSL certificates, and access lists.
+`npmctl` is an owner-scoped GitOps controller for Nginx Proxy Manager. It validates desired-state YAML, plans safe changes against a live NPM API, applies clean plans, and adopts unmanaged resources only when explicitly requested.
 
-## Core safety model
+It manages:
 
-- All managed resources require `meta.managed_by: npmctl`, `meta.owner`, and `meta.resource_id`.
-- A workload can create, update, delete, or adopt only resources inside its owner scope.
+- Proxy hosts
+- SSL certificates
+- Access lists
+
+## Safety Model
+
+- Every managed resource must carry `meta.managed_by: npmctl`, `meta.owner`, and `meta.resource_id`.
+- `--owner` limits planning and mutation to one owner scope.
 - Foreign-owned resources are immutable to the current owner.
-- Manual/unmanaged resources cannot be mutated unless `npmctl adopt` is explicitly invoked.
-- Prune/delete is never implicit; use `--prune-owned`.
-- API operations are schema-gated and fail closed when the NPM OpenAPI schema does not expose the required endpoint.
+- Unmanaged resources are not changed by `plan` or `apply`; use `adopt` to attach npmctl metadata.
+- Deletes are opt-in with `--prune-owned`.
+- API operations are gated by the NPM OpenAPI schema and fail closed when a required endpoint is unavailable.
 
-## CLI quickstart
+## Requirements
+
+- Python `3.11`, `3.12`, or `3.13`
+- Access to a Nginx Proxy Manager API, usually `http://host:81/api`
+- NPM admin credentials or an account with permissions for the resources you want to manage
+- Optional for local development: Docker and Docker Compose
+
+## Install
+
+Install the published CLI with `pipx`:
+
+```bash
+pipx install npmctl
+npmctl --version
+npmctl --help
+```
+
+Install with `uv` as a tool:
+
+```bash
+uv tool install npmctl
+npmctl --help
+```
+
+Install from a local checkout:
+
+```bash
+git clone https://github.com/groupsum/npmctl.git
+cd npmctl
+uv sync
+uv run npmctl --help
+```
+
+Run directly from the workspace while developing:
 
 ```bash
 uv run npmctl validate examples/desired-state
-uv run npmctl schema capabilities --schema schemas/npm/2.10.4/openapi.json
-uv run npmctl plan examples/desired-state --owner workload-a
-uv run npmctl apply examples/desired-state --owner workload-a
-uv run npmctl adopt examples/desired-state --owner workload-a
+uv run pytest
 ```
 
-## Desired state
+## Configure API Access
+
+You can pass API credentials on every command:
+
+```bash
+npmctl --base-url http://127.0.0.1:81/api --identity admin@example.com --secret changeme health
+```
+
+For regular use, set environment variables:
+
+```bash
+export NPM_BASE_URL=http://127.0.0.1:81/api
+export NPM_IDENTITY=admin@example.com
+export NPM_SECRET=changeme
+export NPM_TIMEOUT_S=15
+```
+
+PowerShell:
+
+```powershell
+$env:NPM_BASE_URL = "http://127.0.0.1:81/api"
+$env:NPM_IDENTITY = "admin@example.com"
+$env:NPM_SECRET = "changeme"
+$env:NPM_TIMEOUT_S = "15"
+```
+
+Then verify connectivity:
+
+```bash
+npmctl health
+```
+
+## Local NPM Stack
+
+The repo includes a SQLite-backed NPM stack for local testing:
+
+```bash
+docker compose -f deploy/npm/docker-compose.yml up -d
+export NPM_BASE_URL=http://127.0.0.1:81/api
+export NPM_IDENTITY=admin@example.com
+export NPM_SECRET=changeme
+npmctl health
+```
+
+For details, see [deploy/npm/README.md](deploy/npm/README.md).
+
+## Desired State
+
+A minimal proxy host:
 
 ```yaml
 apiVersion: npmctl.io/v1
 schemaVersion: 1
 proxy_hosts:
   - domain_names: [app.example.com]
+    forward_scheme: http
     forward_host: app
     forward_port: 3000
     meta:
@@ -40,4 +125,168 @@ proxy_hosts:
       resource_id: proxy.app
 ```
 
-See `docs/` for architecture, CLI, schema migrations, GitHub Actions, SSL certificates, access lists, and adoption semantics.
+A proxy host with certificate and access-list references:
+
+```yaml
+apiVersion: npmctl.io/v1
+schemaVersion: 1
+certificates:
+  - name: wildcard-example
+    domain_names: ["*.example.com", example.com]
+    certificate_type: letsencrypt
+    api_payload:
+      provider: letsencrypt
+    meta:
+      managed_by: npmctl
+      owner: workload-a
+      resource_id: cert.wildcard-example
+access_lists:
+  - name: private-admins
+    api_payload:
+      satisfy_any: 0
+      items: []
+      clients: []
+    meta:
+      managed_by: npmctl
+      owner: workload-a
+      resource_id: acl.private-admins
+proxy_hosts:
+  - domain_names: [app.example.com]
+    forward_scheme: http
+    forward_host: app
+    forward_port: 3000
+    certificate_ref: cert.wildcard-example
+    access_list_ref: acl.private-admins
+    ssl_forced: 1
+    http2_support: 1
+    allow_websocket_upgrade: 1
+    caching_enabled: 1
+    block_exploits: 1
+    meta:
+      managed_by: npmctl
+      owner: workload-a
+      resource_id: proxy.app
+```
+
+More examples are in [examples/desired-state](examples/desired-state).
+
+## Usage
+
+Validate desired state without calling NPM:
+
+```bash
+npmctl validate examples/desired-state
+npmctl --output json validate examples/desired-state
+```
+
+Check whether files need schema migration:
+
+```bash
+npmctl migrate examples/desired-state --check
+npmctl migrate examples/desired-state --write
+```
+
+Fetch the live NPM OpenAPI schema:
+
+```bash
+npmctl schema fetch --write schemas/npm/live-openapi.json
+```
+
+Inspect endpoint capabilities from a schema file or from the live API:
+
+```bash
+npmctl schema capabilities --schema schemas/npm/2.10.4/openapi.json
+npmctl schema capabilities
+npmctl schema check
+```
+
+Plan owner-scoped changes:
+
+```bash
+npmctl plan examples/desired-state --owner workload-a
+npmctl --output json plan examples/desired-state --owner workload-a
+```
+
+Apply a clean plan:
+
+```bash
+npmctl apply examples/desired-state --owner workload-a
+```
+
+Preview the apply path without mutation:
+
+```bash
+npmctl apply examples/desired-state --owner workload-a --dry-run
+```
+
+Delete owned resources that are no longer present in desired state:
+
+```bash
+npmctl apply examples/desired-state --owner workload-a --prune-owned
+```
+
+Adopt unmanaged matching resources by writing npmctl metadata:
+
+```bash
+npmctl adopt examples/desired-state --owner workload-a
+```
+
+Strict adoption requires the unmanaged resource fields to match desired state. To allow field drift while attaching metadata:
+
+```bash
+npmctl adopt examples/desired-state --owner workload-a --allow-field-drift
+```
+
+## Operational Flow
+
+1. Author YAML with explicit `meta.owner` and `meta.resource_id`.
+2. Run `npmctl validate`.
+3. Run `npmctl schema check` against the target NPM instance.
+4. Run `npmctl plan --owner <owner>`.
+5. Review creates, updates, deletes, adopts, noops, and conflicts.
+6. Run `npmctl apply --owner <owner>` only when the plan is clean.
+7. Use `--prune-owned` only when absent owned resources should be deleted.
+
+## Exit Codes
+
+- `0`: success
+- `1`: plan conflict
+- `2`: usage, validation, or migration error
+- `3`: API error
+- `4`: endpoint capability error
+
+## Development
+
+Run the normal local checks:
+
+```bash
+uv sync
+uv run ruff check .
+uv run ruff format --check .
+uv run pytest
+uv build --package npmctl
+```
+
+Run real NPM E2E tests against the bundled CI stack:
+
+```bash
+docker compose -f deploy/npm/compose.ci.yml up -d
+export NPMCTL_REAL_NPM=1
+export NPM_BASE_URL=http://127.0.0.1:8181/api
+export NPM_IDENTITY=admin@example.com
+export NPM_SECRET=changeme
+uv run pytest --no-cov -m npm packages/npmctl/tests/e2e
+docker compose -f deploy/npm/compose.ci.yml down
+```
+
+## Documentation
+
+- [CLI](docs/cli.md)
+- [Desired state](docs/desired-state.md)
+- [Owner-scoped reconciliation](docs/owner-scoped-reconcile.md)
+- [Schema migrations](docs/schema-migrations.md)
+- [NPM API compatibility](docs/npm-api-compatibility.md)
+- [SSL certificates](docs/ssl-certificates.md)
+- [Access lists](docs/access-lists.md)
+- [Adoption](docs/adoption.md)
+- [GitHub Actions](docs/github-actions.md)
