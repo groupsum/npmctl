@@ -48,6 +48,26 @@ def test_plan_updates_owned_drift(desired_file) -> None:
     assert any("forward_port" in op.diff for op in plan.operations if op.action == "update")
 
 
+def test_plan_treats_omitted_proxy_defaults_as_converged(desired_file) -> None:
+    desired = load_desired_state(desired_file)
+    existing = _existing_proxy(
+        access_list_id=None,
+        certificate_id=None,
+        advanced_config=None,
+        hsts_enabled=None,
+        hsts_subdomains=None,
+    )
+    existing.raw.pop("locations")
+    plan = compute_plan(
+        desired=desired,
+        existing=ExistingState(proxy_hosts=(existing,)),
+        capabilities=Capabilities.empty(),
+    )
+
+    assert plan.ok
+    assert any(op.action == "noop" and op.kind == ResourceKind.PROXY_HOST for op in plan.operations)
+
+
 def test_plan_conflicts_on_foreign_owner(desired_file) -> None:
     desired = load_desired_state(desired_file)
     existing = ExistingState(
