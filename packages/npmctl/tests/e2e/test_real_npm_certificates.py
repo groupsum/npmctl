@@ -14,6 +14,7 @@ from real_npm_helpers import (
     list_by_name,
     marker,
     require_real_npm,
+    wait_until_absent,
     write_doc,
 )
 
@@ -87,8 +88,13 @@ def test_real_npm_certificate_create_readback_delete_and_proxy_reference(tmp_pat
             assert updated.name == f"{cert_name}-updated"
         if caps.certificates.delete:
             best_effort_delete(npm, ResourceKind.PROXY_HOST, proxy.id)
+            wait_until_absent(
+                npm,
+                ResourceKind.PROXY_HOST,
+                lambda item: item.identity is not None and item.identity.resource_id == f"{run}.proxy",
+            )
             assert npm.delete_resource(ResourceKind.CERTIFICATE, cert.id) is True
-            assert not [item for item in npm.list_resource(ResourceKind.CERTIFICATE) if item.name == cert.name]
+            wait_until_absent(npm, ResourceKind.CERTIFICATE, lambda item: item.name == cert.name)
     finally:
         cleanup_marker(npm, run)
 
