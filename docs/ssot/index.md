@@ -1,5 +1,5 @@
 # SSOT index
 
-Features: 14
-Claims: 4
-Tests: 8
+Features: 85
+Claims: 5
+Tests: 79
