@@ -362,12 +362,30 @@ def _normalized_existing(existing: ExistingResource, desired_payload: dict[str, 
         for key, default in _PROXY_HOST_DEFAULTS.items():
             if key in desired_payload and raw.get(key) is None:
                 raw[key] = default
-    filtered = {key: raw.get(key) for key in desired_payload}
+    filtered: dict[str, Any] = {}
+    for key, desired_value in desired_payload.items():
+        actual_value = raw.get(key)
+        if key == "meta" and isinstance(actual_value, dict) and isinstance(desired_value, dict):
+            actual_value = {meta_key: actual_value.get(meta_key) for meta_key in desired_value}
+        else:
+            actual_value = _coerce_existing_value(actual_value, desired_value)
+        filtered[key] = actual_value
     if "domain_names" in filtered and isinstance(filtered["domain_names"], list):
         filtered["domain_names"] = sorted(filtered["domain_names"])
     if "meta" in filtered and isinstance(filtered["meta"], dict):
         filtered["meta"] = {key: filtered["meta"][key] for key in sorted(filtered["meta"])}
     return filtered
+
+
+def _coerce_existing_value(actual_value: Any, desired_value: Any) -> Any:
+    if desired_value == [] and actual_value is None:
+        return []
+    if isinstance(desired_value, int) and not isinstance(desired_value, bool):
+        if isinstance(actual_value, bool):
+            return int(actual_value)
+        if isinstance(actual_value, str) and actual_value.strip().isdigit():
+            return int(actual_value)
+    return actual_value
 
 
 def _proxy_domain_collision(
