@@ -14,6 +14,8 @@ from npmctl.errors import ApiError, CapabilityError
 from npmctl.models import ExistingResource, ExistingState, ResourceKind
 from npmctl.schema import Capabilities
 
+_TRANSIENT_STATUSES = frozenset({502, 503, 504})
+
 
 class NpmClient:
     """Small typed client for the NPM OpenAPI surface."""
@@ -111,10 +113,26 @@ class NpmClient:
         if authenticated and self._token:
             headers["Authorization"] = f"Bearer {self._token}"
         url = f"{self.base_url}{path}"
-        try:
-            response = self.session.request(method.upper(), url, headers=headers, json=json, timeout=self.timeout_s)
-        except requests.RequestException as exc:
-            raise ApiError(f"{method.upper()} {path} transport error: {exc}") from exc
+        attempts = 3 if method.lower() == "get" else 1
+        last_error: ApiError | None = None
+        for attempt in range(attempts):
+            try:
+                response = self.session.request(method.upper(), url, headers=headers, json=json, timeout=self.timeout_s)
+            except requests.RequestException as exc:
+                last_error = ApiError(f"{method.upper()} {path} transport error: {exc}")
+                if attempt + 1 < attempts:
+                    time.sleep(0.5 * (attempt + 1))
+                    continue
+                raise last_error from exc
+            if response.status_code in _TRANSIENT_STATUSES and attempt + 1 < attempts:
+                last_error = ApiError(f"{method.upper()} {path} failed: HTTP {response.status_code}: {_redact(response.text)}")
+                time.sleep(0.5 * (attempt + 1))
+                continue
+            break
+        else:
+            if last_error is not None:
+                raise last_error
+            raise ApiError(f"{method.upper()} {path} request did not complete")
         if response.status_code < 200 or response.status_code >= 300:
             raise ApiError(f"{method.upper()} {path} failed: HTTP {response.status_code}: {_redact(response.text)}")
         if allow_empty and not response.content:
