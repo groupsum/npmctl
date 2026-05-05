@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import os
+import time
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import pytest
 import yaml
@@ -83,6 +84,24 @@ def best_effort_delete(npm: NpmClient, kind: ResourceKind, resource_id: int) -> 
         npm.delete_resource(kind, resource_id)
     except ApiError:
         return
+
+
+def wait_until_absent(
+    npm: NpmClient,
+    kind: ResourceKind,
+    predicate: Callable[[ExistingResource], bool],
+    *,
+    timeout_s: float = 10,
+    interval_s: float = 0.25,
+) -> None:
+    deadline = time.monotonic() + timeout_s
+    while True:
+        matches = [item for item in npm.list_resource(kind) if predicate(item)]
+        if not matches:
+            return
+        if time.monotonic() >= deadline:
+            assert not matches
+        time.sleep(interval_s)
 
 
 def _matches(item: ExistingResource, text: str) -> bool:

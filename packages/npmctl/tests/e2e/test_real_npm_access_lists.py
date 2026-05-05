@@ -14,6 +14,7 @@ from real_npm_helpers import (
     list_by_name,
     marker,
     require_real_npm,
+    wait_until_absent,
     write_doc,
 )
 
@@ -77,13 +78,13 @@ def test_real_npm_access_list_create_readback_update_delete_and_proxy_reference(
             assert updated.raw["satisfy_any"] == 1
         if caps.access_lists.delete:
             best_effort_delete(npm, ResourceKind.PROXY_HOST, proxy.id)
-            assert not [
-                item
-                for item in npm.list_resource(ResourceKind.PROXY_HOST)
-                if item.identity and item.identity.resource_id == f"{run}.proxy"
-            ]
+            wait_until_absent(
+                npm,
+                ResourceKind.PROXY_HOST,
+                lambda item: item.identity is not None and item.identity.resource_id == f"{run}.proxy",
+            )
             assert npm.delete_resource(ResourceKind.ACCESS_LIST, acl.id) is True
-            assert not [item for item in npm.list_resource(ResourceKind.ACCESS_LIST) if item.name == acl_name]
+            wait_until_absent(npm, ResourceKind.ACCESS_LIST, lambda item: item.name == acl_name)
     finally:
         cleanup_marker(npm, run)
 

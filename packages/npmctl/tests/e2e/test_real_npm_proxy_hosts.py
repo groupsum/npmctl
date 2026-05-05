@@ -13,6 +13,7 @@ from real_npm_helpers import (
     marker,
     proxy_by_resource_id,
     require_real_npm,
+    wait_until_absent,
     write_doc,
 )
 
@@ -229,11 +230,11 @@ def test_real_npm_proxy_host_field_readback_update_adopt_owner_scope_and_cleanup
         assert f"{run}.foreign" in remaining_ids
     finally:
         cleanup_marker(npm, run)
-        assert not [
-            item
-            for item in npm.list_resource(ResourceKind.PROXY_HOST)
-            if any(run in domain for domain in item.domain_names)
-        ]
+        wait_until_absent(
+            npm,
+            ResourceKind.PROXY_HOST,
+            lambda item: any(run in domain for domain in item.domain_names),
+        )
 
 
 def test_real_npm_domain_collision_is_blocked(tmp_path: Path) -> None:
