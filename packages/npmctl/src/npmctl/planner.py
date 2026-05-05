@@ -16,6 +16,21 @@ from npmctl.models import (
 )
 from npmctl.schema import Capabilities
 
+_PROXY_HOST_DEFAULTS: dict[str, Any] = {
+    "access_list_id": 0,
+    "certificate_id": 0,
+    "ssl_forced": 0,
+    "caching_enabled": 0,
+    "block_exploits": 0,
+    "advanced_config": "",
+    "allow_websocket_upgrade": 0,
+    "http2_support": 0,
+    "enabled": 1,
+    "locations": [],
+    "hsts_enabled": 0,
+    "hsts_subdomains": 0,
+}
+
 
 @dataclass(frozen=True, slots=True)
 class PlannerOptions:
@@ -343,6 +358,10 @@ def _normalized_existing(existing: ExistingResource, desired_payload: dict[str, 
         raw["name"] = existing.name
     if existing.kind == ResourceKind.ACCESS_LIST and "name" not in raw and existing.name is not None:
         raw["name"] = existing.name
+    if existing.kind == ResourceKind.PROXY_HOST:
+        for key, default in _PROXY_HOST_DEFAULTS.items():
+            if key in desired_payload and raw.get(key) is None:
+                raw[key] = default
     filtered = {key: raw.get(key) for key in desired_payload}
     if "domain_names" in filtered and isinstance(filtered["domain_names"], list):
         filtered["domain_names"] = sorted(filtered["domain_names"])
