@@ -11,4 +11,10 @@ runs:
     - shell: bash
       run: uv run yamllint .
     - shell: bash
+      run: uv run python -m compileall -q packages/npmctl/src
+    - shell: bash
       run: uv run pytest
+    - shell: bash
+      run: |
+        uv run python -m npmctl compliance artifacts --output-dir .tmp/compliance --source-dir .
+        uv run python -m npmctl compliance gate --artifact-dir .tmp/compliance

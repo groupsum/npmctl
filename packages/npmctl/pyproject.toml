@@ -1,6 +1,6 @@
 [project]
 name = "npmctl"
-version = "0.2.0"
+version = "0.3.1"
 description = "Owner-scoped plan/apply/adopt controller for Nginx Proxy Manager resources."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"

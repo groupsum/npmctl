@@ -11,6 +11,7 @@ from npmctl.metadata import merge_managed_meta
 from npmctl.models import (
     DesiredAccessList,
     DesiredCertificate,
+    DesiredGenericResource,
     DesiredProxyHost,
     ExistingResource,
     PlanAction,
@@ -114,13 +115,17 @@ class ApplyEngine:
         return {"action": "delete", "kind": existing.kind.value, "resource_id": resource_id, "id": existing.id}
 
     def _merge_existing_with_desired(
-        self, existing: ExistingResource, desired: DesiredProxyHost | DesiredCertificate | DesiredAccessList
+        self,
+        existing: ExistingResource,
+        desired: DesiredProxyHost | DesiredCertificate | DesiredAccessList | DesiredGenericResource,
     ) -> dict[str, Any]:
         payload = self._payload_for(desired)
         payload["meta"] = merge_managed_meta(existing.raw.get("meta"), desired.meta)
         return payload
 
-    def _payload_for(self, desired: DesiredProxyHost | DesiredCertificate | DesiredAccessList) -> dict[str, Any]:
+    def _payload_for(
+        self, desired: DesiredProxyHost | DesiredCertificate | DesiredAccessList | DesiredGenericResource
+    ) -> dict[str, Any]:
         if isinstance(desired, DesiredProxyHost):
             certificate_id = self._resolve_reference(desired.certificate_ref, ResourceKind.CERTIFICATE)
             access_list_id = self._resolve_reference(desired.access_list_ref, ResourceKind.ACCESS_LIST)
@@ -143,14 +148,34 @@ def _ordered_operations(operations: tuple[PlanOperation, ...]) -> list[PlanOpera
         op for op in operations if op.action in {PlanAction.CREATE, PlanAction.UPDATE, PlanAction.ADOPT}
     ]
     deletes = [op for op in operations if op.action == PlanAction.DELETE]
-    order = {ResourceKind.CERTIFICATE: 0, ResourceKind.ACCESS_LIST: 1, ResourceKind.PROXY_HOST: 2}
-    delete_order = {ResourceKind.PROXY_HOST: 0, ResourceKind.ACCESS_LIST: 1, ResourceKind.CERTIFICATE: 2}
+    order = {
+        ResourceKind.CERTIFICATE: 0,
+        ResourceKind.ACCESS_LIST: 1,
+        ResourceKind.REDIRECTION_HOST: 2,
+        ResourceKind.DEAD_HOST: 2,
+        ResourceKind.STREAM: 2,
+        ResourceKind.USER: 2,
+        ResourceKind.SETTING: 2,
+        ResourceKind.PROXY_HOST: 3,
+    }
+    delete_order = {
+        ResourceKind.PROXY_HOST: 0,
+        ResourceKind.REDIRECTION_HOST: 1,
+        ResourceKind.DEAD_HOST: 1,
+        ResourceKind.STREAM: 1,
+        ResourceKind.USER: 1,
+        ResourceKind.SETTING: 1,
+        ResourceKind.ACCESS_LIST: 2,
+        ResourceKind.CERTIFICATE: 3,
+    }
     return sorted(creates_updates_adopts, key=lambda op: order[op.kind]) + sorted(
         deletes, key=lambda op: delete_order[op.kind]
     )
 
 
-def _require_desired(operation: PlanOperation) -> DesiredProxyHost | DesiredCertificate | DesiredAccessList:
+def _require_desired(
+    operation: PlanOperation,
+) -> DesiredProxyHost | DesiredCertificate | DesiredAccessList | DesiredGenericResource:
     if operation.desired is None:
         raise ValidationError(f"operation {operation.action} requires desired resource")
     return operation.desired
@@ -185,6 +210,11 @@ def _updateable_existing_payload(existing: ExistingResource) -> dict[str, Any]:
         ),
         ResourceKind.ACCESS_LIST: ("name", "satisfy_any", "pass_auth", "items", "clients", "meta"),
         ResourceKind.CERTIFICATE: ("provider", "nice_name", "domain_names", "meta"),
+        ResourceKind.REDIRECTION_HOST: ("domain_names", "forward_domain_name", "meta"),
+        ResourceKind.DEAD_HOST: ("domain_names", "meta"),
+        ResourceKind.STREAM: ("incoming_port", "forward_host", "forward_port", "protocol", "meta"),
+        ResourceKind.USER: ("name", "email", "roles", "is_disabled", "meta"),
+        ResourceKind.SETTING: ("name", "value", "meta"),
     }[existing.kind]
     payload = {field: existing.raw[field] for field in fields if field in existing.raw}
     if existing.kind == ResourceKind.PROXY_HOST:

@@ -11,6 +11,15 @@ It manages:
 - Proxy hosts
 - SSL certificates
 - Access lists
+- Redirection hosts
+- Dead hosts
+- Streams
+- Users
+- Settings
+
+It also provides read-only audit log reporting, operator diagnostics, compliance
+artifact generation, and plugin contracts for future custom resource and
+certificate providers.
 
 ## Safety Model
 

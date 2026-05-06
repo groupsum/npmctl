@@ -22,12 +22,14 @@ runs:
         NPM_BASE_URL: http://127.0.0.1:8181/api
         NPM_IDENTITY: admin@example.com
         NPM_SECRET: changeme
-      run: uv run pytest --no-cov -m npm packages/npmctl/tests/e2e
+      run: uv run pytest -m npm packages/npmctl/tests/e2e --cov=npmctl --cov-report=xml:real-npm-coverage.xml --cov-report=term-missing --cov-fail-under=0
     - if: always()
       shell: bash
       run: docker compose -f deploy/npm/compose.ci.yml logs --no-color > npm-e2e-container.log || true
     - if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: npm-e2e-container-logs
-        path: npm-e2e-container.log
+        name: npm-e2e-artifacts
+        path: |
+          npm-e2e-container.log
+          real-npm-coverage.xml

@@ -34,6 +34,11 @@ class ResourceKind(StrEnum):
     PROXY_HOST = "proxy_host"
     CERTIFICATE = "certificate"
     ACCESS_LIST = "access_list"
+    REDIRECTION_HOST = "redirection_host"
+    DEAD_HOST = "dead_host"
+    STREAM = "stream"
+    USER = "user"
+    SETTING = "setting"
 
 
 class PlanAction(StrEnum):
@@ -398,7 +403,108 @@ class DesiredAccessList:
         return self.to_payload()
 
 
-DesiredResource = DesiredProxyHost | DesiredCertificate | DesiredAccessList
+@dataclass(frozen=True, slots=True)
+class DesiredGenericResource:
+    """Pass-through desired-state declaration for additional NPM resource kinds."""
+
+    kind: ResourceKind
+    natural_key: Any
+    meta: dict[str, Any]
+    api_payload: dict[str, Any] = field(default_factory=dict)
+    name: str | None = None
+    domain_names: tuple[str, ...] = ()
+
+    @classmethod
+    def from_mapping(cls, kind: ResourceKind, raw: Mapping[str, Any], *, path: str) -> DesiredGenericResource:
+        raw = require_mapping(raw, path=path)
+        if "meta" not in raw:
+            raise ValidationError(f"{path} missing required keys: meta")
+        api_payload = mapping_or_empty(raw.get("api_payload"), path=f"{path}.api_payload")
+        if kind in {ResourceKind.REDIRECTION_HOST, ResourceKind.DEAD_HOST}:
+            if "domain_names" not in raw:
+                raise ValidationError(f"{path} missing required keys: domain_names")
+            domain_names = canonical_domain_set(raw["domain_names"], path=f"{path}.domain_names")
+            natural_key: Any = domain_names
+            payload = dict(api_payload)
+            payload["domain_names"] = list(domain_names)
+            if kind == ResourceKind.REDIRECTION_HOST and "forward_domain_name" in raw:
+                payload["forward_domain_name"] = canonicalize_domain(
+                    raw["forward_domain_name"], path=f"{path}.forward_domain_name"
+                )
+            return cls(
+                kind=kind,
+                natural_key=natural_key,
+                domain_names=domain_names,
+                meta=validate_metadata(raw["meta"], path=path),
+                api_payload=payload,
+            )
+        if kind == ResourceKind.STREAM:
+            if "incoming_port" not in raw:
+                raise ValidationError(f"{path} missing required keys: incoming_port")
+            incoming_port = validate_port(raw["incoming_port"], path=f"{path}.incoming_port")
+            payload = dict(api_payload)
+            payload["incoming_port"] = incoming_port
+            if "forward_host" in raw:
+                payload["forward_host"] = validate_forward_host(raw["forward_host"], path=f"{path}.forward_host")
+            if "forward_port" in raw:
+                payload["forward_port"] = validate_port(raw["forward_port"], path=f"{path}.forward_port")
+            if "protocol" in raw:
+                protocol = raw["protocol"]
+                if protocol not in {"tcp", "udp"}:
+                    raise ValidationError(f"{path}.protocol must be tcp or udp")
+                payload["protocol"] = protocol
+            return cls(
+                kind=kind,
+                natural_key=incoming_port,
+                meta=validate_metadata(raw["meta"], path=path),
+                api_payload=payload,
+            )
+        if kind == ResourceKind.USER:
+            if "email" not in raw:
+                raise ValidationError(f"{path} missing required keys: email")
+            if not isinstance(raw["email"], str) or "@" not in raw["email"]:
+                raise ValidationError(f"{path}.email must be an email-like string")
+            email = raw["email"].strip().lower()
+            payload = dict(api_payload)
+            payload["email"] = email
+            return cls(
+                kind=kind,
+                natural_key=email,
+                name=email,
+                meta=validate_metadata(raw["meta"], path=path),
+                api_payload=payload,
+            )
+        if kind == ResourceKind.SETTING:
+            if "name" not in raw:
+                raise ValidationError(f"{path} missing required keys: name")
+            name = validate_name(raw["name"], path=f"{path}.name")
+            payload = dict(api_payload)
+            payload["name"] = name
+            if "value" in raw:
+                payload["value"] = raw["value"]
+            return cls(
+                kind=kind,
+                natural_key=name,
+                name=name,
+                meta=validate_metadata(raw["meta"], path=path),
+                api_payload=payload,
+            )
+        raise ValidationError(f"unsupported generic resource kind: {kind.value}")
+
+    @property
+    def identity(self) -> ManagedIdentity:
+        return ManagedIdentity(owner=str(self.meta["owner"]), resource_id=str(self.meta["resource_id"]))
+
+    def to_payload(self) -> dict[str, Any]:
+        payload = dict(self.api_payload)
+        payload.setdefault("meta", dict(self.meta))
+        return payload
+
+    def comparable_payload(self) -> dict[str, Any]:
+        return self.to_payload()
+
+
+DesiredResource = DesiredProxyHost | DesiredCertificate | DesiredAccessList | DesiredGenericResource
 
 
 @dataclass(frozen=True, slots=True)
@@ -455,6 +561,44 @@ class ExistingResource:
             identity=identity_from_meta(item.get("meta")),
         )
 
+    @classmethod
+    def from_generic(cls, kind: ResourceKind, raw: Mapping[str, Any]) -> ExistingResource:
+        item = dict(raw)
+        if kind in {ResourceKind.REDIRECTION_HOST, ResourceKind.DEAD_HOST}:
+            domain_names = canonical_domain_set(
+                item.get("domain_names", []), path=f"{kind.value}.domain_names", allow_empty=True
+            )
+            natural_key: Any = domain_names
+            name = ",".join(domain_names) if domain_names else f"{kind.value}-{_raw_id(item)}"
+            return cls(
+                kind=kind,
+                id=_raw_id(item),
+                raw=item,
+                natural_key=natural_key,
+                domain_names=domain_names,
+                name=name,
+                identity=identity_from_meta(item.get("meta")),
+            )
+        if kind == ResourceKind.STREAM:
+            natural_key = item.get("incoming_port") or item.get("tcp_forwarding") or _raw_id(item)
+            return cls(
+                kind=kind,
+                id=_raw_id(item),
+                raw=item,
+                natural_key=natural_key,
+                name=str(natural_key),
+                identity=identity_from_meta(item.get("meta")),
+            )
+        name = str(item.get("name") or item.get("email") or item.get("key") or f"{kind.value}-{_raw_id(item)}")
+        return cls(
+            kind=kind,
+            id=_raw_id(item),
+            raw=item,
+            natural_key=name,
+            name=name,
+            identity=identity_from_meta(item.get("meta")),
+        )
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "kind": self.kind.value,
@@ -480,12 +624,26 @@ class DesiredState:
     proxy_hosts: tuple[DesiredProxyHost, ...] = ()
     certificates: tuple[DesiredCertificate, ...] = ()
     access_lists: tuple[DesiredAccessList, ...] = ()
+    redirection_hosts: tuple[DesiredGenericResource, ...] = ()
+    dead_hosts: tuple[DesiredGenericResource, ...] = ()
+    streams: tuple[DesiredGenericResource, ...] = ()
+    users: tuple[DesiredGenericResource, ...] = ()
+    settings: tuple[DesiredGenericResource, ...] = ()
     source_files: tuple[str, ...] = ()
     api_version: str = "npmctl.io/v1"
     schema_version: int = 1
 
     def resources(self) -> tuple[DesiredResource, ...]:
-        return (*self.certificates, *self.access_lists, *self.proxy_hosts)
+        return (
+            *self.certificates,
+            *self.access_lists,
+            *self.redirection_hosts,
+            *self.dead_hosts,
+            *self.streams,
+            *self.users,
+            *self.settings,
+            *self.proxy_hosts,
+        )
 
     def resources_by_kind(self, kind: ResourceKind) -> tuple[DesiredResource, ...]:
         if kind == ResourceKind.PROXY_HOST:
@@ -494,6 +652,16 @@ class DesiredState:
             return self.certificates
         if kind == ResourceKind.ACCESS_LIST:
             return self.access_lists
+        if kind == ResourceKind.REDIRECTION_HOST:
+            return self.redirection_hosts
+        if kind == ResourceKind.DEAD_HOST:
+            return self.dead_hosts
+        if kind == ResourceKind.STREAM:
+            return self.streams
+        if kind == ResourceKind.USER:
+            return self.users
+        if kind == ResourceKind.SETTING:
+            return self.settings
         return ()
 
     @property
@@ -508,9 +676,23 @@ class ExistingState:
     proxy_hosts: tuple[ExistingResource, ...] = ()
     certificates: tuple[ExistingResource, ...] = ()
     access_lists: tuple[ExistingResource, ...] = ()
+    redirection_hosts: tuple[ExistingResource, ...] = ()
+    dead_hosts: tuple[ExistingResource, ...] = ()
+    streams: tuple[ExistingResource, ...] = ()
+    users: tuple[ExistingResource, ...] = ()
+    settings: tuple[ExistingResource, ...] = ()
 
     def resources(self) -> tuple[ExistingResource, ...]:
-        return (*self.certificates, *self.access_lists, *self.proxy_hosts)
+        return (
+            *self.certificates,
+            *self.access_lists,
+            *self.redirection_hosts,
+            *self.dead_hosts,
+            *self.streams,
+            *self.users,
+            *self.settings,
+            *self.proxy_hosts,
+        )
 
     def resources_by_kind(self, kind: ResourceKind) -> tuple[ExistingResource, ...]:
         if kind == ResourceKind.PROXY_HOST:
@@ -519,6 +701,16 @@ class ExistingState:
             return self.certificates
         if kind == ResourceKind.ACCESS_LIST:
             return self.access_lists
+        if kind == ResourceKind.REDIRECTION_HOST:
+            return self.redirection_hosts
+        if kind == ResourceKind.DEAD_HOST:
+            return self.dead_hosts
+        if kind == ResourceKind.STREAM:
+            return self.streams
+        if kind == ResourceKind.USER:
+            return self.users
+        if kind == ResourceKind.SETTING:
+            return self.settings
         return ()
 
 

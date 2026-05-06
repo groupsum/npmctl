@@ -6,6 +6,8 @@ on:
     workflows: [CI]
     types: [completed]
   workflow_dispatch:
+  schedule:
+    - cron: "23 4 * * *"
 
 concurrency:
   group: npmctl-real-npm-e2e-${{ github.ref }}
@@ -17,7 +19,7 @@ permissions:
 
 jobs:
   e2e:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

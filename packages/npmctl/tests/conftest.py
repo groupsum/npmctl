@@ -68,6 +68,17 @@ FULL_OPENAPI = {
         "/nginx/certificates/{id}": {"get": {}, "put": {}, "delete": {}},
         "/nginx/access-lists": {"get": {}, "post": {}},
         "/nginx/access-lists/{id}": {"get": {}, "put": {}, "delete": {}},
+        "/nginx/redirection-hosts": {"get": {}, "post": {}},
+        "/nginx/redirection-hosts/{id}": {"get": {}, "put": {}, "delete": {}},
+        "/nginx/dead-hosts": {"get": {}, "post": {}},
+        "/nginx/dead-hosts/{id}": {"get": {}, "put": {}, "delete": {}},
+        "/nginx/streams": {"get": {}, "post": {}},
+        "/nginx/streams/{id}": {"get": {}, "put": {}, "delete": {}},
+        "/users": {"get": {}, "post": {}},
+        "/users/{id}": {"get": {}, "put": {}, "delete": {}},
+        "/settings": {"get": {}, "post": {}},
+        "/settings/{id}": {"get": {}, "put": {}, "delete": {}},
+        "/audit-log": {"get": {}},
     },
 }
 
@@ -77,6 +88,12 @@ class FakeNpmState:
         self.proxy_hosts: list[dict[str, Any]] = []
         self.certificates: list[dict[str, Any]] = []
         self.access_lists: list[dict[str, Any]] = []
+        self.redirection_hosts: list[dict[str, Any]] = []
+        self.dead_hosts: list[dict[str, Any]] = []
+        self.streams: list[dict[str, Any]] = []
+        self.users: list[dict[str, Any]] = []
+        self.settings: list[dict[str, Any]] = []
+        self.audit_log: list[dict[str, Any]] = []
         self.next_id = 1
         self.schema = FULL_OPENAPI
 
@@ -143,6 +160,18 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, self.state.certificates)
         elif path == "/nginx/access-lists":
             self._json(200, self.state.access_lists)
+        elif path == "/nginx/redirection-hosts":
+            self._json(200, self.state.redirection_hosts)
+        elif path == "/nginx/dead-hosts":
+            self._json(200, self.state.dead_hosts)
+        elif path == "/nginx/streams":
+            self._json(200, self.state.streams)
+        elif path == "/users":
+            self._json(200, self.state.users)
+        elif path == "/settings":
+            self._json(200, self.state.settings)
+        elif path.startswith("/audit-log"):
+            self._json(200, self.state.audit_log)
         else:
             self._json(404, {"error": "not found"})
 
@@ -156,6 +185,16 @@ class Handler(BaseHTTPRequestHandler):
             self._json(201, self.state.create("certificates", self._read()))
         elif path == "/nginx/access-lists":
             self._json(201, self.state.create("access_lists", self._read()))
+        elif path == "/nginx/redirection-hosts":
+            self._json(201, self.state.create("redirection_hosts", self._read()))
+        elif path == "/nginx/dead-hosts":
+            self._json(201, self.state.create("dead_hosts", self._read()))
+        elif path == "/nginx/streams":
+            self._json(201, self.state.create("streams", self._read()))
+        elif path == "/users":
+            self._json(201, self.state.create("users", self._read()))
+        elif path == "/settings":
+            self._json(201, self.state.create("settings", self._read()))
         else:
             self._json(404, {"error": "not found"})
 
@@ -185,6 +224,11 @@ def _collection_and_id(path: str) -> tuple[str | None, int]:
         "/nginx/proxy-hosts/": "proxy_hosts",
         "/nginx/certificates/": "certificates",
         "/nginx/access-lists/": "access_lists",
+        "/nginx/redirection-hosts/": "redirection_hosts",
+        "/nginx/dead-hosts/": "dead_hosts",
+        "/nginx/streams/": "streams",
+        "/users/": "users",
+        "/settings/": "settings",
     }
     for prefix, collection in mapping.items():
         if path.startswith(prefix):

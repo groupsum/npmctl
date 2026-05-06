@@ -1,6 +1,6 @@
 [project]
 name = "npmctl-workspace"
-version = "0.2.0"
+version = "0.3.1"
 description = "Workspace root for npmctl, an owner-scoped Nginx Proxy Manager controller."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -58,7 +58,7 @@ source = ["npmctl"]
 [tool.coverage.report]
 show_missing = true
 skip_covered = false
-fail_under = 70
+fail_under = 100
 exclude_lines = [
   "pragma: no cover",
   "if TYPE_CHECKING:",

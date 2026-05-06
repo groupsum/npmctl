@@ -22,4 +22,9 @@ CONTRACTS: dict[ResourceKind, ResourceContract] = {
     ResourceKind.PROXY_HOST: ResourceContract(ResourceKind.PROXY_HOST, "/nginx/proxy-hosts"),
     ResourceKind.CERTIFICATE: ResourceContract(ResourceKind.CERTIFICATE, "/nginx/certificates"),
     ResourceKind.ACCESS_LIST: ResourceContract(ResourceKind.ACCESS_LIST, "/nginx/access-lists"),
+    ResourceKind.REDIRECTION_HOST: ResourceContract(ResourceKind.REDIRECTION_HOST, "/nginx/redirection-hosts"),
+    ResourceKind.DEAD_HOST: ResourceContract(ResourceKind.DEAD_HOST, "/nginx/dead-hosts"),
+    ResourceKind.STREAM: ResourceContract(ResourceKind.STREAM, "/nginx/streams"),
+    ResourceKind.USER: ResourceContract(ResourceKind.USER, "/users"),
+    ResourceKind.SETTING: ResourceContract(ResourceKind.SETTING, "/settings"),
 }

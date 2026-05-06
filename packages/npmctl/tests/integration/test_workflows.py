@@ -32,6 +32,7 @@ def test_workflow_trigger_and_gate_semantics() -> None:
 
     assert release["on"]["workflow_run"]["workflows"] == ["Real NPM E2E"]
     assert release["on"]["workflow_run"]["types"] == ["completed"]
+    assert "workflow_dispatch" not in release["on"]
     assert "workflow_run.conclusion == 'success'" in release["jobs"]["build"]["if"]
     assert release["jobs"]["publish"]["needs"] == "build"
     assert "startsWith(github.event.workflow_run.head_branch, 'v')" in release["jobs"]["publish"]["if"]

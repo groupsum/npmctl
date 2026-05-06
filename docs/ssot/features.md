@@ -1,6 +1,6 @@
 # Features
 
-Generated entries: 85
+Generated entries: 135
 
 | id | title | implementation_status | horizon | target_tier | claims | tests |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -8,9 +8,42 @@ Generated entries: 85
 | feat:adoption | Explicit adoption of unmanaged resources | implemented | current | T2 | clm:owner-scoped-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
 | feat:auth-token | Authenticate to NPM API | implemented | current | T2 | clm:create-only-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-client-cli |
 | feat:certificate-crud | Owner-scoped SSL certificate CRUD | implemented | current | T2 | clm:owner-scoped-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
+| feat:ci-real-npm-coverage-artifact | Real NPM coverage artifact | implemented | explicit | T2 | clm:conformance-release-blocking-live-npm, clm:expanded-feature-scope-planning | tst:conformance-release-blocking-live-npm, tst:expanded-feature-scope-planning |
+| feat:ci-real-npm-scheduled-e2e | Scheduled real NPM E2E CI | implemented | explicit | T2 | clm:conformance-release-blocking-live-npm, clm:expanded-feature-scope-planning | tst:conformance-release-blocking-live-npm, tst:expanded-feature-scope-planning |
+| feat:cli-completion | CLI shell completions | implemented | explicit | T2 | clm:cli-operator-certification, clm:expanded-feature-scope-planning | tst:cli-operator-certification, tst:expanded-feature-scope-planning |
+| feat:cli-config-file | CLI config file | implemented | explicit | T2 | clm:cli-operator-certification, clm:expanded-feature-scope-planning | tst:cli-operator-certification, tst:expanded-feature-scope-planning |
+| feat:cli-doctor | CLI doctor diagnostics | implemented | explicit | T2 | clm:cli-operator-certification, clm:expanded-feature-scope-planning | tst:cli-operator-certification, tst:expanded-feature-scope-planning |
+| feat:cli-env-diagnostics | CLI environment diagnostics | implemented | explicit | T2 | clm:cli-operator-certification, clm:expanded-feature-scope-planning | tst:cli-operator-certification, tst:expanded-feature-scope-planning |
+| feat:cli-plan-output-schema-validation | CLI plan output schema validation | implemented | explicit | T2 | clm:cli-operator-certification, clm:expanded-feature-scope-planning | tst:cli-operator-certification, tst:expanded-feature-scope-planning |
 | feat:cli-surface | Operator CLI surface | implemented | current | T2 | clm:create-only-integrity | tst:unit-client-cli |
+| feat:cli-version-json | CLI JSON version output | implemented | explicit | T2 | clm:cli-operator-certification, clm:expanded-feature-scope-planning | tst:cli-operator-certification, tst:expanded-feature-scope-planning |
+| feat:compliance-dependency-vulnerability-gate | Dependency vulnerability compliance gate | implemented | explicit | T2 | clm:compliance-real-oss-release, clm:expanded-feature-scope-planning | tst:compliance-real-oss-release, tst:expanded-feature-scope-planning |
+| feat:compliance-owner-scope-safety-profile | Owner scope safety compliance profile | implemented | explicit | T2 | clm:compliance-real-oss-release, clm:expanded-feature-scope-planning | tst:compliance-real-oss-release, tst:expanded-feature-scope-planning |
+| feat:compliance-provenance-attestation | Release provenance attestation | implemented | explicit | T2 | clm:compliance-real-oss-release, clm:expanded-feature-scope-planning | tst:compliance-real-oss-release, tst:expanded-feature-scope-planning |
+| feat:compliance-real-oss-artifacts | Real OSS compliance artifacts | implemented | explicit | T2 | clm:compliance-real-oss-release | tst:compliance-real-oss-release |
+| feat:compliance-release-gate-profile | Release gate compliance profile | implemented | explicit | T2 | clm:compliance-real-oss-release, clm:expanded-feature-scope-planning | tst:compliance-real-oss-release, tst:expanded-feature-scope-planning |
+| feat:compliance-sbom | Release SBOM | implemented | explicit | T2 | clm:compliance-real-oss-release, clm:expanded-feature-scope-planning | tst:compliance-real-oss-release, tst:expanded-feature-scope-planning |
+| feat:compliance-security-scan-gate | Security scan compliance gate | implemented | explicit | T2 | clm:compliance-real-oss-release, clm:expanded-feature-scope-planning | tst:compliance-real-oss-release, tst:expanded-feature-scope-planning |
+| feat:conformance-live-api-version-matrix | Live API version conformance matrix | implemented | explicit | T2 | clm:conformance-release-blocking-live-npm, clm:expanded-feature-scope-planning | tst:conformance-release-blocking-live-npm, tst:expanded-feature-scope-planning |
+| feat:conformance-npm-2-10-4-api-profile | NPM 2.10.4 API conformance profile | implemented | explicit | T2 | clm:conformance-release-blocking-live-npm, clm:expanded-feature-scope-planning | tst:conformance-release-blocking-live-npm, tst:expanded-feature-scope-planning |
+| feat:conformance-openapi-subset-doc | OpenAPI subset conformance document | implemented | explicit | T2 | clm:conformance-release-blocking-live-npm, clm:expanded-feature-scope-planning | tst:conformance-release-blocking-live-npm, tst:expanded-feature-scope-planning |
+| feat:conformance-release-blocking-live-npm | Release-blocking live NPM conformance | implemented | explicit | T2 | clm:conformance-release-blocking-live-npm | tst:conformance-release-blocking-live-npm |
+| feat:conformance-schema-drift-report | Schema drift conformance report | implemented | explicit | T2 | clm:conformance-release-blocking-live-npm, clm:expanded-feature-scope-planning | tst:conformance-release-blocking-live-npm, tst:expanded-feature-scope-planning |
+| feat:coverage-cli-exception-branches | CLI exception branch coverage | implemented | explicit | T2 | clm:coverage-total-100-percent, clm:expanded-feature-scope-planning | tst:coverage-total-100-percent, tst:expanded-feature-scope-planning |
+| feat:coverage-client-auth-wrapper | Client auth wrapper coverage | implemented | explicit | T2 | clm:coverage-total-100-percent, clm:expanded-feature-scope-planning | tst:coverage-total-100-percent, tst:expanded-feature-scope-planning |
+| feat:coverage-client-wrapper-functions | Client wrapper coverage | implemented | explicit | T2 | clm:coverage-total-100-percent, clm:expanded-feature-scope-planning | tst:coverage-total-100-percent, tst:expanded-feature-scope-planning |
+| feat:coverage-entrypoint-main | Entrypoint coverage | implemented | explicit | T2 | clm:coverage-total-100-percent, clm:expanded-feature-scope-planning | tst:coverage-total-100-percent, tst:expanded-feature-scope-planning |
+| feat:coverage-logging-redaction | Logging redaction coverage | implemented | explicit | T2 | clm:coverage-total-100-percent, clm:expanded-feature-scope-planning | tst:coverage-total-100-percent, tst:expanded-feature-scope-planning |
+| feat:coverage-model-validation-edges | Model validation edge coverage | implemented | explicit | T2 | clm:coverage-total-100-percent, clm:expanded-feature-scope-planning | tst:coverage-total-100-percent, tst:expanded-feature-scope-planning |
+| feat:coverage-total-100-percent | 100 percent statement and branch coverage | implemented | explicit | T2 | clm:coverage-total-100-percent | tst:coverage-total-100-percent |
+| feat:coverage-validation-module | Validation module coverage | implemented | explicit | T2 | clm:coverage-total-100-percent, clm:expanded-feature-scope-planning | tst:coverage-total-100-percent, tst:expanded-feature-scope-planning |
 | feat:create-missing-proxy-hosts | Create missing proxy hosts | implemented | current | T2 | clm:create-only-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
+| feat:dev-coverage-threshold-ratchet | Development coverage threshold ratchet | implemented | explicit | T2 | clm:coverage-total-100-percent, clm:expanded-feature-scope-planning | tst:coverage-total-100-percent, tst:expanded-feature-scope-planning |
+| feat:dev-real-e2e-coverage-measurement | Real NPM E2E coverage measurement | implemented | explicit | T2 | clm:conformance-release-blocking-live-npm, clm:expanded-feature-scope-planning | tst:conformance-release-blocking-live-npm, tst:expanded-feature-scope-planning |
+| feat:dev-schema-fixture-roundtrip | Schema fixture roundtrip gate | implemented | explicit | T2 | clm:development-gate-certification, clm:expanded-feature-scope-planning | tst:development-gate-certification, tst:expanded-feature-scope-planning |
+| feat:dev-type-checking | Development type checking gate | implemented | explicit | T2 | clm:development-gate-certification, clm:expanded-feature-scope-planning | tst:development-gate-certification, tst:expanded-feature-scope-planning |
 | feat:discover-proxy-hosts | Discover current proxy hosts | implemented | current | T2 | clm:create-only-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-client-cli |
+| feat:extension-resource-contract-api | Extension resource contract API | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:plugin-runtime-certification | tst:expanded-feature-scope-planning, tst:plugin-runtime-certification |
 | feat:gap-acl-ref-negative | Access-list reference negative coverage | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-acl-ref-negative |
 | feat:gap-apply-adopt-merge | Apply adopt merge coverage | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-apply-adopt-merge |
 | feat:gap-apply-conflict-no-mutation | Apply conflict no-mutation coverage | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-apply-conflict-no-mutation |
@@ -84,8 +117,25 @@ Generated entries: 85
 | feat:gap-workflow-semantics | GitHub workflow semantics coverage | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-workflow-semantics |
 | feat:github-actions-gates | Gated GitHub Actions with real NPM E2E | implemented | current | T2 | clm:owner-scoped-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
 | feat:metadata-ownership | Validate metadata ownership | implemented | current | T2 | clm:metadata-conflict-guard | tst:integration-fake-npm, tst:unit-planner, tst:unit-validation |
+| feat:ops-apply-transaction-report | Apply transaction report | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:operational-hardening-certification | tst:expanded-feature-scope-planning, tst:operational-hardening-certification |
+| feat:ops-audit-log-output | Operational audit log output | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:operational-hardening-certification | tst:expanded-feature-scope-planning, tst:operational-hardening-certification |
+| feat:ops-containerized-cli-image | Containerized CLI image | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:operational-hardening-certification | tst:expanded-feature-scope-planning, tst:operational-hardening-certification |
+| feat:ops-resource-drift-report | Resource drift report | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:operational-hardening-certification | tst:expanded-feature-scope-planning, tst:operational-hardening-certification |
+| feat:ops-rollback-plan | Operational rollback plan | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:operational-hardening-certification | tst:expanded-feature-scope-planning, tst:operational-hardening-certification |
+| feat:ops-state-backup-before-apply | State backup before apply | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:operational-hardening-certification | tst:expanded-feature-scope-planning, tst:operational-hardening-certification |
 | feat:owner-scoped-reconcile | Owner-scoped plan and apply | implemented | current | T2 | clm:owner-scoped-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
+| feat:plugin-custom-cert-provider | Plugin custom certificate provider | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:plugin-runtime-certification | tst:expanded-feature-scope-planning, tst:plugin-runtime-certification |
+| feat:plugin-custom-resource-kind | Plugin custom resource kind | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:plugin-runtime-certification | tst:expanded-feature-scope-planning, tst:plugin-runtime-certification |
+| feat:plugin-provider-interface | Plugin provider interface | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:plugin-runtime-certification | tst:expanded-feature-scope-planning, tst:plugin-runtime-certification |
+| feat:plugin-runtime-loading | Runtime plugin discovery and diagnostics | implemented | explicit | T2 | clm:plugin-runtime-certification | tst:plugin-runtime-certification |
 | feat:proxy-host-crud | Owner-scoped proxy host CRUD | implemented | current | T2 | clm:owner-scoped-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
+| feat:resource-audit-log | Audit log resource reporting | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:resource-expanded-certification | tst:expanded-feature-scope-planning, tst:resource-expanded-certification |
+| feat:resource-dead-hosts | Dead host resource support | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:resource-expanded-certification | tst:expanded-feature-scope-planning, tst:resource-expanded-certification |
+| feat:resource-redirection-hosts | Redirection host resource support | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:resource-expanded-certification | tst:expanded-feature-scope-planning, tst:resource-expanded-certification |
+| feat:resource-settings | Settings resource support | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:resource-expanded-certification | tst:expanded-feature-scope-planning, tst:resource-expanded-certification |
+| feat:resource-streams | Stream resource support | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:resource-expanded-certification | tst:expanded-feature-scope-planning, tst:resource-expanded-certification |
+| feat:resource-users | User resource support | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:resource-expanded-certification | tst:expanded-feature-scope-planning, tst:resource-expanded-certification |
 | feat:schema-capabilities | OpenAPI capability detection | implemented | current | T2 | clm:owner-scoped-integrity, clm:schema-gated-api | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
 | feat:schema-migrations | Desired-state schema migrations | implemented | current | T2 | clm:owner-scoped-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
+| feat:ssot-feature-family-proof-closure | Feature-family SSOT proof closure | implemented | explicit | T2 | clm:development-gate-certification | tst:development-gate-certification |
 | feat:strict-plan | Compute strict owner-scoped plans | implemented | current | T2 | clm:create-only-integrity, clm:metadata-conflict-guard | tst:integration-fake-npm, tst:unit-planner |

@@ -11,10 +11,23 @@ from typing import Any, Sequence
 from npmctl import __version__
 from npmctl.apply import ApplyEngine
 from npmctl.client import NpmClient
+from npmctl.config import apply_config, load_config
+from npmctl.diagnostics import doctor_report, environment_report
 from npmctl.errors import ApiError, CapabilityError, ConflictError, MigrationError, NpmctlError, ValidationError
 from npmctl.loader import load_desired_state
 from npmctl.migrations import migrate_path
+from npmctl.operational import (
+    compliance_artifacts,
+    drift_report,
+    rollback_plan,
+    transaction_report,
+    validate_compliance_gate,
+    validate_plan_output,
+    write_json,
+    write_state_backup,
+)
 from npmctl.output import format_plan_text, write_error, write_output
+from npmctl.plugins import PluginRegistry
 from npmctl.planner import PlannerOptions, compute_plan
 from npmctl.schema import Capabilities, load_openapi_schema
 
@@ -33,11 +46,15 @@ def build_parser() -> argparse.ArgumentParser:
         description="Owner-scoped plan/apply/adopt controller for Nginx Proxy Manager resources.",
     )
     parser.add_argument("--version", action="version", version=f"npmctl {__version__}")
+    parser.add_argument("--config", help="TOML config file with [npmctl] settings")
     parser.add_argument("--base-url", default=os.getenv("NPM_BASE_URL"), help="NPM API URL, e.g. http://host:81/api")
     parser.add_argument("--identity", default=os.getenv("NPM_IDENTITY"), help="NPM login identity")
     parser.add_argument("--secret", default=os.getenv("NPM_SECRET"), help="NPM login secret")
     parser.add_argument(
-        "--timeout", default=float(os.getenv("NPM_TIMEOUT_S", "15")), type=float, help="HTTP timeout seconds"
+        "--timeout",
+        default=float(os.getenv("NPM_TIMEOUT_S")) if os.getenv("NPM_TIMEOUT_S") else None,
+        type=float,
+        help="HTTP timeout seconds",
     )
     parser.add_argument("--output", choices=("text", "json"), default="text", help="Output format")
 
@@ -54,6 +71,18 @@ def build_parser() -> argparse.ArgumentParser:
     health = sub.add_parser("health", help="Call NPM API health endpoint")
     health.set_defaults(needs_api=True)
 
+    doctor = sub.add_parser("doctor", help="Diagnose config, API reachability, and capabilities")
+    doctor.set_defaults(needs_api=False)
+
+    env = sub.add_parser("env", help="Show redacted npmctl environment diagnostics")
+    env.set_defaults(needs_api=False)
+
+    version = sub.add_parser("version", help="Show machine-readable version metadata")
+    version.add_argument("--json", action="store_true", help="Emit JSON version metadata")
+
+    completion = sub.add_parser("completion", help="Generate shell completion script")
+    completion.add_argument("shell", choices=("bash", "powershell", "zsh"))
+
     schema = sub.add_parser("schema", help="OpenAPI schema commands")
     schema_sub = schema.add_subparsers(dest="schema_command", required=True)
     fetch = schema_sub.add_parser("fetch", help="Fetch /schema from NPM")
@@ -68,18 +97,48 @@ def build_parser() -> argparse.ArgumentParser:
 
     plan = sub.add_parser("plan", help="Compute owner-scoped CRUD plan")
     _add_reconcile_args(plan)
+    plan.add_argument("--validate-output", action="store_true", help="Validate plan output against npmctl schema")
     plan.set_defaults(needs_api=True)
 
     apply = sub.add_parser("apply", help="Apply a clean owner-scoped CRUD plan")
     _add_reconcile_args(apply)
     apply.add_argument("--dry-run", action="store_true", help="Plan but do not mutate NPM")
+    apply.add_argument("--backup-dir", help="Write remote state backup before apply")
+    apply.add_argument("--report", help="Write structured apply transaction report")
+    apply.add_argument("--rollback-plan", help="Write best-effort rollback plan")
+    apply.add_argument("--audit-log", dest="audit_log_path", help="Write local audit log JSON for this apply")
+    apply.add_argument("--validate-output", action="store_true", help="Validate plan output against npmctl schema")
     apply.set_defaults(needs_api=True)
 
     adopt = sub.add_parser("adopt", help="Adopt unmanaged matching resources by writing metadata")
     _add_reconcile_args(adopt)
     adopt.add_argument("--allow-field-drift", action="store_true", help="Allow adopting resources whose fields differ")
     adopt.add_argument("--force", action="store_true", help="Alias for --allow-field-drift with explicit intent")
+    adopt.add_argument("--validate-output", action="store_true", help="Validate plan output against npmctl schema")
     adopt.set_defaults(needs_api=True, adopt=True)
+
+    drift = sub.add_parser("drift", help="Report remote drift without applying mutations")
+    _add_reconcile_args(drift)
+    drift.set_defaults(needs_api=True)
+
+    audit = sub.add_parser("audit-log", help="Read NPM audit log entries")
+    audit.add_argument("--since", help="Optional since filter passed to NPM")
+    audit.set_defaults(needs_api=True)
+
+    compliance = sub.add_parser("compliance", help="Compliance artifact commands")
+    compliance_sub = compliance.add_subparsers(dest="compliance_command", required=True)
+    artifacts = compliance_sub.add_parser(
+        "artifacts", help="Generate SBOM, provenance, scan, and release-gate artifacts"
+    )
+    artifacts.add_argument("--output-dir", required=True)
+    artifacts.add_argument("--source-dir", default=".")
+    artifacts.add_argument("--dist-dir")
+    gate = compliance_sub.add_parser("gate", help="Validate generated compliance artifacts")
+    gate.add_argument("--artifact-dir", required=True)
+
+    plugins = sub.add_parser("plugins", help="Inspect runtime plugin discovery")
+    plugins_sub = plugins.add_subparsers(dest="plugins_command", required=True)
+    plugins_sub.add_parser("list", help="List discovered plugin providers")
 
     return parser
 
@@ -95,6 +154,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
+        apply_config(args, load_config(getattr(args, "config", None)))
         return _dispatch(args, parser)
     except ValidationError as exc:
         write_error(args.output, "validation_error", str(exc))
@@ -123,6 +183,44 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
         write_output(args.output, payload, _format_validate_text(payload))
         return EXIT_OK
 
+    if args.command == "env":
+        payload = {"ok": True, "environment": environment_report(dict(os.environ))}
+        write_output(args.output, payload, json.dumps(payload, indent=2, sort_keys=True))
+        return EXIT_OK
+
+    if args.command == "version":
+        payload = {"package": "npmctl", "version": __version__, "schema_version": 1, "api_profile": "npm-2.10.4"}
+        text = json.dumps(payload, indent=2, sort_keys=True) if args.json or args.output == "json" else __version__
+        write_output("json" if args.json else args.output, payload, text)
+        return EXIT_OK
+
+    if args.command == "completion":
+        payload = {"ok": True, "shell": args.shell}
+        write_output(args.output, payload, _completion_script(args.shell))
+        return EXIT_OK
+
+    if args.command == "compliance":
+        if args.compliance_command == "gate":
+            payload = validate_compliance_gate(args.artifact_dir)
+            write_output(args.output, payload, json.dumps(payload, indent=2, sort_keys=True))
+            return EXIT_OK if payload["ok"] else EXIT_USAGE_OR_VALIDATION
+        paths = compliance_artifacts(
+            args.output_dir,
+            package_name="npmctl",
+            version=__version__,
+            source_dir=args.source_dir,
+            dist_dir=args.dist_dir,
+        )
+        payload = {"ok": True, "artifacts": [str(path) for path in paths]}
+        write_output(args.output, payload, json.dumps(payload, indent=2, sort_keys=True))
+        return EXIT_OK
+
+    if args.command == "plugins":
+        registry = PluginRegistry.discover()
+        payload = {"ok": True, "plugins": registry.to_dict()}
+        write_output(args.output, payload, json.dumps(payload, indent=2, sort_keys=True))
+        return EXIT_OK
+
     if args.command == "migrate":
         if args.write and args.check:
             raise ValidationError("migrate --write and --check cannot be combined")
@@ -142,7 +240,25 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
         getattr(args, "needs_api_optional_schema", False) and not getattr(args, "schema", None)
     ):
         _require_api_args(args, parser)
-        client = NpmClient(base_url=args.base_url, identity=args.identity, secret=args.secret, timeout_s=args.timeout)
+        client = NpmClient(
+            base_url=args.base_url, identity=args.identity, secret=args.secret, timeout_s=args.timeout or 15.0
+        )
+
+    if args.command == "doctor":
+        health = None
+        capabilities = None
+        if args.base_url and args.identity and args.secret:
+            client = NpmClient(
+                base_url=args.base_url,
+                identity=args.identity,
+                secret=args.secret,
+                timeout_s=args.timeout or 15.0,
+            )
+            health = client.health()
+            capabilities = client.capabilities().to_dict()
+        payload = doctor_report(args=args, health=health, capabilities=capabilities)
+        write_output(args.output, payload, json.dumps(payload, indent=2, sort_keys=True))
+        return EXIT_OK if payload["ok"] else EXIT_USAGE_OR_VALIDATION
 
     if args.command == "health":
         assert client is not None
@@ -153,7 +269,13 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     if args.command == "schema":
         return _schema_command(args, client)
 
-    if args.command in {"plan", "apply", "adopt"}:
+    if args.command == "audit-log":
+        assert client is not None
+        payload = {"ok": True, "entries": client.audit_log(since=args.since)}
+        write_output(args.output, payload, json.dumps(payload, indent=2, sort_keys=True))
+        return EXIT_OK
+
+    if args.command in {"plan", "apply", "adopt", "drift"}:
         assert client is not None
         desired = load_desired_state(args.desired_state)
         capabilities = client.capabilities()
@@ -170,20 +292,38 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
             allow_field_drift=getattr(args, "allow_field_drift", False) or getattr(args, "force", False),
         )
         plan = compute_plan(desired=desired, existing=existing, capabilities=capabilities, options=options)
+        if args.command == "drift":
+            payload = drift_report(plan)
+            write_output(args.output, payload, json.dumps(payload, indent=2, sort_keys=True))
+            return EXIT_OK if payload["ok"] else EXIT_CONFLICT
+        plan_payload = plan.to_dict()
+        if getattr(args, "validate_output", False):
+            try:
+                validate_plan_output(plan_payload)
+            except ValueError as exc:
+                raise ValidationError(str(exc)) from exc
         if args.command == "plan" or getattr(args, "dry_run", False):
-            write_output(args.output, plan.to_dict(), format_plan_text(plan))
+            write_output(args.output, plan_payload, format_plan_text(plan))
             return EXIT_OK if plan.ok else EXIT_CONFLICT
         if not plan.ok:
-            write_output(args.output, plan.to_dict(), format_plan_text(plan))
+            write_output(args.output, plan_payload, format_plan_text(plan))
             return EXIT_CONFLICT
+        if getattr(args, "backup_dir", None):
+            write_state_backup(args.backup_dir, existing)
         result = ApplyEngine(client=client, capabilities=capabilities).apply(plan)
-        payload = plan.to_dict() | {"apply": result.to_dict()}
+        payload = transaction_report(plan, result)
+        if getattr(args, "report", None):
+            write_json(args.report, payload)
+        if getattr(args, "rollback_plan", None):
+            write_json(args.rollback_plan, rollback_plan(plan))
+        if getattr(args, "audit_log_path", None):
+            write_json(args.audit_log_path, {"ok": True, "operation": "apply", "summary": payload["summary"]})
         text = format_plan_text(plan) + f"\napplied: true\nmutations: {len(result.mutations)}"
         write_output(args.output, payload, text)
         return EXIT_OK
 
-    parser.error(f"unsupported command: {args.command}")
-    return EXIT_USAGE_OR_VALIDATION
+    parser.error(f"unsupported command: {args.command}")  # pragma: no cover - argparse exits
+    return EXIT_USAGE_OR_VALIDATION  # pragma: no cover
 
 
 def _schema_command(args: argparse.Namespace, client: NpmClient | None) -> int:
@@ -223,6 +363,11 @@ def _desired_summary(desired: Any) -> dict[str, Any]:
         "proxy_hosts": len(desired.proxy_hosts),
         "certificates": len(desired.certificates),
         "access_lists": len(desired.access_lists),
+        "redirection_hosts": len(desired.redirection_hosts),
+        "dead_hosts": len(desired.dead_hosts),
+        "streams": len(desired.streams),
+        "users": len(desired.users),
+        "settings": len(desired.settings),
         "source_files": list(desired.source_files),
     }
 
@@ -232,7 +377,12 @@ def _format_validate_text(payload: dict[str, Any]) -> str:
         "desired state valid\n"
         f"proxy hosts: {payload['proxy_hosts']}\n"
         f"certificates: {payload['certificates']}\n"
-        f"access lists: {payload['access_lists']}"
+        f"access lists: {payload['access_lists']}\n"
+        f"redirection hosts: {payload['redirection_hosts']}\n"
+        f"dead hosts: {payload['dead_hosts']}\n"
+        f"streams: {payload['streams']}\n"
+        f"users: {payload['users']}\n"
+        f"settings: {payload['settings']}"
     )
 
 
@@ -242,6 +392,15 @@ def _redact_cli_message(message: str, args: argparse.Namespace) -> str:
         if value:
             redacted = redacted.replace(str(value), "***")
     return redacted
+
+
+def _completion_script(shell: str) -> str:
+    commands = "validate migrate health doctor env version completion schema plan apply adopt drift audit-log compliance plugins"
+    if shell == "powershell":
+        return f"Register-ArgumentCompleter -Native -CommandName npmctl -ScriptBlock {{ param($wordToComplete) '{commands}'.Split(' ') | Where-Object {{ $_ -like \"$wordToComplete*\" }} }}\n"
+    if shell == "zsh":
+        return f"#compdef npmctl\n_arguments '1:command:({commands})'\n"
+    return f'complete -W "{commands}" npmctl\n'
 
 
 if __name__ == "__main__":  # pragma: no cover

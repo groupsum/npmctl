@@ -69,13 +69,36 @@ class NpmClient:
             return tuple(ExistingResource.from_certificate(item) for item in data)
         if kind == ResourceKind.ACCESS_LIST:
             return tuple(ExistingResource.from_access_list(item) for item in data)
+        if kind in {
+            ResourceKind.REDIRECTION_HOST,
+            ResourceKind.DEAD_HOST,
+            ResourceKind.STREAM,
+            ResourceKind.USER,
+            ResourceKind.SETTING,
+        }:
+            return tuple(ExistingResource.from_generic(kind, item) for item in data)
         raise CapabilityError(f"unsupported resource kind: {kind}")
 
     def existing_state(self, *, include_certificates: bool = True, include_access_lists: bool = True) -> ExistingState:
+        caps = self.capabilities()
         proxy_hosts = self.list_resource(ResourceKind.PROXY_HOST)
         certificates = self.list_resource(ResourceKind.CERTIFICATE) if include_certificates else ()
         access_lists = self.list_resource(ResourceKind.ACCESS_LIST) if include_access_lists else ()
-        return ExistingState(proxy_hosts=proxy_hosts, certificates=certificates, access_lists=access_lists)
+        redirection_hosts = self.list_resource(ResourceKind.REDIRECTION_HOST) if caps.redirection_hosts.list else ()
+        dead_hosts = self.list_resource(ResourceKind.DEAD_HOST) if caps.dead_hosts.list else ()
+        streams = self.list_resource(ResourceKind.STREAM) if caps.streams.list else ()
+        users = self.list_resource(ResourceKind.USER) if caps.users.list else ()
+        settings = self.list_resource(ResourceKind.SETTING) if caps.settings.list else ()
+        return ExistingState(
+            proxy_hosts=proxy_hosts,
+            certificates=certificates,
+            access_lists=access_lists,
+            redirection_hosts=redirection_hosts,
+            dead_hosts=dead_hosts,
+            streams=streams,
+            users=users,
+            settings=settings,
+        )
 
     def create_resource(self, kind: ResourceKind, payload: Mapping[str, Any]) -> ExistingResource:
         contract = CONTRACTS[kind]
@@ -93,6 +116,12 @@ class NpmClient:
         contract = CONTRACTS[kind]
         data = self._request("delete", contract.item_path(resource_id), authenticated=True, allow_empty=True)
         return data is True or data == {} or data is None
+
+    def audit_log(self, *, since: str | None = None) -> Any:
+        path = "/audit-log"
+        if since:
+            path = f"{path}?since={since}"
+        return self._request("get", path, authenticated=True)
 
     def _ensure_token(self) -> None:
         if self._token is None or self._expires is None:
@@ -141,7 +170,7 @@ class NpmClient:
                 time.sleep(0.5 * (attempt + 1))
                 continue
             break
-        else:
+        else:  # pragma: no cover - attempts is always positive for supported methods
             if last_error is not None:
                 raise last_error
             raise ApiError(f"{method.upper()} {path} request did not complete")
@@ -197,6 +226,14 @@ def _parse_created(kind: ResourceKind, data: Any) -> ExistingResource:
         return ExistingResource.from_certificate(data)
     if kind == ResourceKind.ACCESS_LIST:
         return ExistingResource.from_access_list(data)
+    if kind in {
+        ResourceKind.REDIRECTION_HOST,
+        ResourceKind.DEAD_HOST,
+        ResourceKind.STREAM,
+        ResourceKind.USER,
+        ResourceKind.SETTING,
+    }:
+        return ExistingResource.from_generic(kind, data)
     raise CapabilityError(f"unsupported resource kind: {kind}")
 
 
@@ -218,6 +255,12 @@ def _with_npm_2104_compatibility(caps: Capabilities) -> Capabilities:
         proxy_hosts=proxy,
         certificates=certs,
         access_lists=access_lists,
+        redirection_hosts=caps.redirection_hosts,
+        dead_hosts=caps.dead_hosts,
+        streams=caps.streams,
+        users=caps.users,
+        settings=caps.settings,
+        audit_log=caps.audit_log,
         schema_version=caps.schema_version,
     )
 

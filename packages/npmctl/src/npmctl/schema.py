@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -43,16 +43,35 @@ class Capabilities:
     proxy_hosts: ResourceCapabilities
     certificates: ResourceCapabilities
     access_lists: ResourceCapabilities
+    redirection_hosts: ResourceCapabilities = field(default_factory=ResourceCapabilities)
+    dead_hosts: ResourceCapabilities = field(default_factory=ResourceCapabilities)
+    streams: ResourceCapabilities = field(default_factory=ResourceCapabilities)
+    users: ResourceCapabilities = field(default_factory=ResourceCapabilities)
+    settings: ResourceCapabilities = field(default_factory=ResourceCapabilities)
+    audit_log: ResourceCapabilities = field(default_factory=ResourceCapabilities)
     schema_version: str | None = None
 
     @classmethod
     def empty(cls) -> Capabilities:
-        return cls(ResourceCapabilities(), ResourceCapabilities(), ResourceCapabilities())
+        empty = ResourceCapabilities()
+        return cls(empty, empty, empty, empty, empty, empty, empty, empty, empty)
 
     @classmethod
     def full_for_tests(cls) -> Capabilities:
         cap = ResourceCapabilities(list=True, create=True, get=True, update=True, delete=True, update_method="put")
-        return cls(proxy_hosts=cap, certificates=cap, access_lists=cap, schema_version="test")
+        read_only = ResourceCapabilities(list=True, get=True)
+        return cls(
+            proxy_hosts=cap,
+            certificates=cap,
+            access_lists=cap,
+            redirection_hosts=cap,
+            dead_hosts=cap,
+            streams=cap,
+            users=cap,
+            settings=cap,
+            audit_log=read_only,
+            schema_version="test",
+        )
 
     @classmethod
     def from_openapi(cls, spec: dict[str, Any]) -> Capabilities:
@@ -70,6 +89,12 @@ class Capabilities:
             proxy_hosts=_detect(paths, "/nginx/proxy-hosts"),
             certificates=_detect(paths, "/nginx/certificates"),
             access_lists=_detect(paths, "/nginx/access-lists"),
+            redirection_hosts=_detect(paths, "/nginx/redirection-hosts"),
+            dead_hosts=_detect(paths, "/nginx/dead-hosts"),
+            streams=_detect(paths, "/nginx/streams"),
+            users=_detect(paths, "/users"),
+            settings=_detect(paths, "/settings"),
+            audit_log=_detect(paths, "/audit-log"),
             schema_version=version,
         )
 
@@ -80,6 +105,16 @@ class Capabilities:
             return self.certificates
         if kind == ResourceKind.ACCESS_LIST:
             return self.access_lists
+        if kind == ResourceKind.REDIRECTION_HOST:
+            return self.redirection_hosts
+        if kind == ResourceKind.DEAD_HOST:
+            return self.dead_hosts
+        if kind == ResourceKind.STREAM:
+            return self.streams
+        if kind == ResourceKind.USER:
+            return self.users
+        if kind == ResourceKind.SETTING:
+            return self.settings
         raise CapabilityError(f"unsupported resource kind: {kind}")
 
     def require(self, kind: ResourceKind, operation: str) -> None:
@@ -93,6 +128,12 @@ class Capabilities:
             "proxy_hosts": self.proxy_hosts.to_dict(),
             "certificates": self.certificates.to_dict(),
             "access_lists": self.access_lists.to_dict(),
+            "redirection_hosts": self.redirection_hosts.to_dict(),
+            "dead_hosts": self.dead_hosts.to_dict(),
+            "streams": self.streams.to_dict(),
+            "users": self.users.to_dict(),
+            "settings": self.settings.to_dict(),
+            "audit_log": self.audit_log.to_dict(),
         }
 
 
