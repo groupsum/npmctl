@@ -56,7 +56,7 @@ jobs:
           echo "ref=${{ inputs.ref }}" >> "$GITHUB_OUTPUT"
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      - uses: cobycloud/actions/actions/version-bump@main
+      - uses: cobycloud/actions/actions/version-bump@master
         id: bump
         with:
           version: ${{ inputs.version }}
@@ -68,7 +68,7 @@ jobs:
             (__version__\s*=\s*["']).*?(["'])
           update-lockfiles: "false"
 
-      - uses: cobycloud/actions/actions/git-commit-generated@main
+      - uses: cobycloud/actions/actions/git-commit-generated@master
         id: commit
         with:
           paths: |
@@ -83,7 +83,7 @@ jobs:
         shell: bash
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      - uses: cobycloud/actions/actions/release-prepare@main
+      - uses: cobycloud/actions/actions/release-prepare@master
         id: prepare
         with:
           version: ${{ inputs.version }}
@@ -181,7 +181,7 @@ jobs:
           name: npmctl-release-notes
           path: .tmp/release
 
-      - uses: cobycloud/actions/actions/github-release@main
+      - uses: cobycloud/actions/actions/github-release@master
         if: inputs.publish_github_release
         with:
           tag-name: ${{ needs.prepare.outputs.tag_name }}
@@ -189,7 +189,7 @@ jobs:
           body-path: .tmp/release/release-notes.md
           files: dist/*
 
-      - uses: cobycloud/actions/actions/pypi-publish@main
+      - uses: cobycloud/actions/actions/pypi-publish@master
         if: inputs.publish_pypi
         with:
           packages-dir: dist

@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   python-matrix:
-    uses: cobycloud/actions/.github/workflows/reusable-python-package-matrix-ci.yml@main
+    uses: cobycloud/actions/.github/workflows/reusable-python-package-matrix-ci.yml@master
     with:
       python-versions: '["3.10","3.11","3.12","3.13"]'
       package-cells: '[{"name":"npmctl","path":"."}]'

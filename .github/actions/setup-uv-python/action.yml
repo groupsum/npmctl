@@ -9,7 +9,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: cobycloud/actions/actions/python-uv@main
+    - uses: cobycloud/actions/actions/python-uv@master
       with:
         python-version: ${{ inputs.python-version }}
         install-command: uv sync --all-packages --dev
