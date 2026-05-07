@@ -24,12 +24,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Deploy lander service
-        uses: cobycloud/actions/actions/docker-compose-service@master
-        with:
-          compose-command: docker compose
-          compose-file: deploy/lander/compose.yml
-          service: lander
-          operation: rebuild
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose -f deploy/lander/compose.yml up -d --build --force-recreate lander
 
       - name: Connect NPM to lander network
         shell: bash
