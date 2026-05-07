@@ -27,7 +27,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          docker compose -f deploy/lander/compose.yml up -d --build --force-recreate lander
+          if docker compose version >/dev/null 2>&1; then
+            compose=(docker compose)
+          elif command -v docker-compose >/dev/null 2>&1; then
+            compose=(docker-compose)
+          else
+            echo "Docker Compose is not installed on this runner" >&2
+            exit 1
+          fi
+          "${compose[@]}" -f deploy/lander/compose.yml up -d --build --force-recreate lander
 
       - name: Connect NPM to lander network
         shell: bash
