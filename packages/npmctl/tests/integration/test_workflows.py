@@ -25,7 +25,12 @@ def test_workflow_trigger_and_gate_semantics() -> None:
 
     assert matrix["on"]["push"]["branches"] == ["master", "v*"]
     assert "workflow_dispatch" in matrix["on"]
-    assert matrix["jobs"]["python-matrix"]["with"]["python-versions"] == '["3.10","3.11","3.12","3.13"]'
+    assert matrix["jobs"]["pytest"]["strategy"]["matrix"]["python-version"] == [
+        "3.10",
+        "3.11",
+        "3.12",
+        "3.13",
+    ]
 
     assert live_npm["name"] == "Live NPM Gate"
     assert "workflow_dispatch" in live_npm["on"]

@@ -15,7 +15,7 @@ The repository includes local composite actions and gated workflows.
 
 - `CI`: lint, format, YAML lint, pytest, schema gate.
 - `Docs and SSOT`: runs after CI succeeds.
-- `Python Matrix`: runs pytest on Python 3.10, 3.11, 3.12, and 3.13 through `cobycloud/actions`.
+- `Python Matrix`: runs pytest on Python 3.10, 3.11, 3.12, and 3.13.
 - `Live NPM Gate`: starts Nginx Proxy Manager in Docker and runs opt-in pytest E2E.
 - `Release`: dispatches CI, Docs/SSOT, `Python Matrix`, and `Live NPM Gate`, waits for all to pass on the release ref, then builds. Dispatch checkboxes control GitHub Release creation and PyPI publishing.
 

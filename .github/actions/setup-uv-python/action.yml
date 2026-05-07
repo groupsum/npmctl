@@ -9,8 +9,15 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: cobycloud/actions/actions/python-uv@master
+    - uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
+    - uses: actions/setup-python@v5
       with:
         python-version: ${{ inputs.python-version }}
-        install-command: uv sync --all-packages --dev
-        run-command: ""
+    - shell: bash
+      env:
+        PIP_INDEX_URL: https://pypi.org/simple
+        UV_DEFAULT_INDEX: https://pypi.org/simple
+        UV_INDEX_URL: https://pypi.org/simple
+      run: uv sync --all-packages --dev

@@ -56,43 +56,74 @@ jobs:
           echo "ref=${{ inputs.ref }}" >> "$GITHUB_OUTPUT"
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      - uses: cobycloud/actions/actions/version-bump@master
-        id: bump
-        with:
-          version: ${{ inputs.version }}
-          pyproject-files: |
-            pyproject.toml
-            packages/npmctl/pyproject.toml
-          extra-version-files: packages/npmctl/src/npmctl/__init__.py
-          extra-version-pattern: >-
-            (__version__\s*=\s*["']).*?(["'])
-          update-lockfiles: "false"
+      - name: Bump release metadata
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          cat > /tmp/npmctl-bump-version.py <<'PY'
+          import os
+          import re
+          from pathlib import Path
 
-      - uses: cobycloud/actions/actions/git-commit-generated@master
-        id: commit
-        with:
-          paths: |
-            pyproject.toml
-            packages/npmctl/pyproject.toml
+          version = os.environ["VERSION"]
+          version_paths = [
+              Path("pyproject.toml"),
+              Path("packages/npmctl/pyproject.toml"),
+          ]
+          for path in version_paths:
+              text = path.read_text(encoding="utf-8")
+              text = re.sub(
+                  r'(^version\s*=\s*)["\'][^"\']*["\']',
+                  rf'\1"{version}"',
+                  text,
+                  count=1,
+                  flags=re.M,
+              )
+              path.write_text(text, encoding="utf-8")
+          init = Path("packages/npmctl/src/npmctl/__init__.py")
+          text = init.read_text(encoding="utf-8")
+          text = re.sub(
+              r'(__version__\s*=\s*)["\'][^"\']*["\']',
+              rf'\1"{version}"',
+              text,
+          )
+          init.write_text(text, encoding="utf-8")
+          PY
+          python /tmp/npmctl-bump-version.py
+
+      - name: Commit release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add \
+            pyproject.toml \
+            packages/npmctl/pyproject.toml \
             packages/npmctl/src/npmctl/__init__.py
-          commit-message: Release npmctl ${{ inputs.version }}
-          push: "true"
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Release npmctl ${{ inputs.version }}"
+          git push
 
       - name: Refresh target SHA after release commit
         id: final-target
         shell: bash
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      - uses: cobycloud/actions/actions/release-prepare@master
+      - name: Prepare release metadata
         id: prepare
-        with:
-          version: ${{ inputs.version }}
-          release-name: npmctl v${{ inputs.version }}
-          fallback-notes: Release npmctl v${{ inputs.version }}
-          validate-version-files: |
-            pyproject.toml
-            packages/npmctl/pyproject.toml
-            packages/npmctl/src/npmctl/__init__.py
+        shell: bash
+        run: |
+          set -euo pipefail
+          notes="release-notes.md"
+          echo "Release npmctl v${{ inputs.version }}" > "$notes"
+          echo "tag-name=v${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          echo "release-name=npmctl v${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          echo "release-notes=$notes" >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -181,15 +212,15 @@ jobs:
           name: npmctl-release-notes
           path: .tmp/release
 
-      - uses: cobycloud/actions/actions/github-release@master
+      - uses: softprops/action-gh-release@v2
         if: inputs.publish_github_release
         with:
-          tag-name: ${{ needs.prepare.outputs.tag_name }}
+          tag_name: ${{ needs.prepare.outputs.tag_name }}
           name: ${{ needs.prepare.outputs.release_name }}
-          body-path: .tmp/release/release-notes.md
+          body_path: .tmp/release/release-notes.md
           files: dist/*
 
-      - uses: cobycloud/actions/actions/pypi-publish@master
+      - uses: pypa/gh-action-pypi-publish@release/v1
         if: inputs.publish_pypi
         with:
           packages-dir: dist
