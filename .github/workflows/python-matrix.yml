@@ -28,4 +28,5 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv run python -m compileall -q packages/npmctl/src
-      - run: uv run pytest
+      - run: uv run python -m compileall -q packages/npmctl-namecheap/src
+      - run: uv run pytest packages/npmctl/tests packages/npmctl-namecheap/tests
