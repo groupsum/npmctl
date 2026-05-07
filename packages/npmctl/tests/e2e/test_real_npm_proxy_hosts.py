@@ -33,7 +33,7 @@ def test_real_npm_proxy_host_field_readback_update_adopt_owner_scope_and_cleanup
         acl_name = f"{run}-acl"
         domain = f"{run}.example.invalid"
         desired = {
-            "apiVersion": "npmctl.io/v1",
+            "apiVersion": "npmctl.com/v1",
             "schemaVersion": 1,
             "certificates": [
                 {
@@ -109,7 +109,7 @@ def test_real_npm_proxy_host_field_readback_update_adopt_owner_scope_and_cleanup
         }
 
         update_doc = {
-            "apiVersion": "npmctl.io/v1",
+            "apiVersion": "npmctl.com/v1",
             "schemaVersion": 1,
             "proxy_hosts": [
                 {
@@ -152,7 +152,7 @@ def test_real_npm_proxy_host_field_readback_update_adopt_owner_scope_and_cleanup
             },
         )
         adopt_doc = {
-            "apiVersion": "npmctl.io/v1",
+            "apiVersion": "npmctl.com/v1",
             "schemaVersion": 1,
             "proxy_hosts": [
                 {
@@ -180,7 +180,7 @@ def test_real_npm_proxy_host_field_readback_update_adopt_owner_scope_and_cleanup
             },
         )
         foreign_doc = {
-            "apiVersion": "npmctl.io/v1",
+            "apiVersion": "npmctl.com/v1",
             "schemaVersion": 1,
             "proxy_hosts": [
                 {
@@ -194,7 +194,7 @@ def test_real_npm_proxy_host_field_readback_update_adopt_owner_scope_and_cleanup
         assert main([*common, "plan", str(write_doc(tmp_path, foreign_doc))]) == 1
 
         selected_doc = {
-            "apiVersion": "npmctl.io/v1",
+            "apiVersion": "npmctl.com/v1",
             "schemaVersion": 1,
             "proxy_hosts": [
                 {
@@ -219,7 +219,7 @@ def test_real_npm_proxy_host_field_readback_update_adopt_owner_scope_and_cleanup
             if item.identity and item.identity.resource_id == f"{run}.selected-b"
         ]
 
-        empty_doc = {"apiVersion": "npmctl.io/v1", "schemaVersion": 1, "proxy_hosts": []}
+        empty_doc = {"apiVersion": "npmctl.com/v1", "schemaVersion": 1, "proxy_hosts": []}
         assert main([*common, "apply", str(write_doc(tmp_path, empty_doc)), "--owner", owner_a, "--prune-owned"]) == 0
         remaining_ids = {
             item.identity.resource_id
@@ -256,7 +256,7 @@ def test_real_npm_domain_collision_is_blocked(tmp_path: Path) -> None:
             },
         )
         desired = {
-            "apiVersion": "npmctl.io/v1",
+            "apiVersion": "npmctl.com/v1",
             "schemaVersion": 1,
             "proxy_hosts": [
                 {

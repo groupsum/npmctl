@@ -14,7 +14,7 @@ import yaml
 @pytest.fixture
 def desired_doc() -> dict[str, Any]:
     return {
-        "apiVersion": "npmctl.io/v1",
+        "apiVersion": "npmctl.com/v1",
         "schemaVersion": 1,
         "certificates": [
             {

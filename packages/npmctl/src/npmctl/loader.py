@@ -24,7 +24,7 @@ from npmctl.models import (
 from npmctl.plugins import PluginRegistry
 
 SUPPORTED_EXTENSIONS = frozenset({".yaml", ".yml", ".json"})
-EXPECTED_API_VERSION = "npmctl.io/v1"
+EXPECTED_API_VERSION = "npmctl.com/v1"
 EXPECTED_SCHEMA_VERSION = 1
 
 

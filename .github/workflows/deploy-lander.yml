@@ -1,0 +1,60 @@
+---
+name: Deploy npmctl.com Lander
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - deploy/lander/**
+      - .github/workflows/deploy-lander.yml
+
+concurrency:
+  group: npmctl-lander-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on:
+      group: deployment
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy lander service
+        uses: cobycloud/actions/actions/docker-compose-service@master
+        with:
+          compose-command: docker compose
+          compose-file: deploy/lander/compose.yml
+          service: lander
+          operation: rebuild
+
+      - name: Connect NPM to lander network
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm_container="$(docker ps \
+            --filter ancestor=jc21/nginx-proxy-manager:2.10.4 \
+            --format '{{.Names}}' \
+            | head -n 1)"
+          if [[ -z "$npm_container" ]]; then
+            npm_container="$(docker ps \
+              --filter ancestor=jc21/nginx-proxy-manager \
+              --format '{{.Names}}' \
+              | head -n 1)"
+          fi
+          if [[ -z "$npm_container" ]]; then
+            echo "Unable to find running Nginx Proxy Manager container" >&2
+            docker ps
+            exit 1
+          fi
+          docker network connect npmctl_lander_net "$npm_container" 2>/dev/null || true
+
+      - name: Verify lander container
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(docker inspect -f '{{.State.Running}}' npmctl_lander)" = "true"
+          docker exec npmctl_lander wget -qO- http://127.0.0.1/ | grep -q "Hello from the npmctl lander."

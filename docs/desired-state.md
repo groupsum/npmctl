@@ -1,6 +1,6 @@
 # Desired-state schema
 
-Desired state requires `apiVersion: npmctl.io/v1` and `schemaVersion: 1`.
+Desired state requires `apiVersion: npmctl.com/v1` and `schemaVersion: 1`.
 Resource lists are `certificates`, `access_lists`, `proxy_hosts`,
 `redirection_hosts`, `dead_hosts`, `streams`, `users`, `settings`,
 `plugin_resources`, and `external_certificates`.

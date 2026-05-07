@@ -26,7 +26,7 @@ def test_load_rejects_missing_schema_header(tmp_path: Path, desired_doc) -> None
 
 
 def test_load_rejects_unsupported_api_version(tmp_path: Path, desired_doc) -> None:
-    desired_doc["apiVersion"] = "npmctl.io/v2"
+    desired_doc["apiVersion"] = "npmctl.com/v2"
     path = tmp_path / "bad.yaml"
     path.write_text(yaml.safe_dump(desired_doc), encoding="utf-8")
 
@@ -47,7 +47,7 @@ def test_load_rejects_duplicate_domains(tmp_path: Path, desired_doc) -> None:
 def test_load_rejects_duplicate_metadata_identities_across_files(tmp_path: Path, desired_doc) -> None:
     first = dict(desired_doc)
     second = {
-        "apiVersion": "npmctl.io/v1",
+        "apiVersion": "npmctl.com/v1",
         "schemaVersion": 1,
         "proxy_hosts": [
             {
@@ -77,7 +77,7 @@ def test_load_discovers_directory_files_in_stable_order(tmp_path: Path) -> None:
         path.write_text(
             yaml.safe_dump(
                 {
-                    "apiVersion": "npmctl.io/v1",
+                    "apiVersion": "npmctl.com/v1",
                     "schemaVersion": 1,
                     "proxy_hosts": [
                         {
@@ -112,7 +112,7 @@ def test_migrate_legacy_document_adds_v1_headers() -> None:
     migrated, changed, before = migrate_document({"proxy_hosts": []})
     assert changed is True
     assert before is None
-    assert migrated["apiVersion"] == "npmctl.io/v1"
+    assert migrated["apiVersion"] == "npmctl.com/v1"
     assert migrated["schemaVersion"] == 1
 
 
@@ -128,4 +128,4 @@ def test_migrate_path_check_and_write(tmp_path: Path) -> None:
 
 def test_migrate_rejects_unknown_future_version() -> None:
     with pytest.raises(MigrationError):
-        migrate_document({"apiVersion": "npmctl.io/v1", "schemaVersion": 999})
+        migrate_document({"apiVersion": "npmctl.com/v1", "schemaVersion": 999})

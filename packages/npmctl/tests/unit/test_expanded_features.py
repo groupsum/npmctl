@@ -22,7 +22,7 @@ from npmctl.validation import load_desired_state as validation_load_desired_stat
 def _expanded_doc() -> dict:
     meta = {"managed_by": "npmctl", "owner": "workload-a", "resource_id": "resource.one"}
     return {
-        "apiVersion": "npmctl.io/v1",
+        "apiVersion": "npmctl.com/v1",
         "schemaVersion": 1,
         "redirection_hosts": [
             {

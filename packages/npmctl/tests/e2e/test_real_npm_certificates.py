@@ -35,7 +35,7 @@ def test_real_npm_certificate_create_readback_delete_and_proxy_reference(tmp_pat
     cleanup_marker(npm, run)
     try:
         desired = {
-            "apiVersion": "npmctl.io/v1",
+            "apiVersion": "npmctl.com/v1",
             "schemaVersion": 1,
             "certificates": [
                 {
@@ -103,7 +103,7 @@ def test_missing_and_ambiguous_certificate_refs_fail_before_apply(tmp_path: Path
     require_real_npm()
     run = marker()
     missing = {
-        "apiVersion": "npmctl.io/v1",
+        "apiVersion": "npmctl.com/v1",
         "schemaVersion": 1,
         "proxy_hosts": [
             {

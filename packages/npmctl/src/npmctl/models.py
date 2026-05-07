@@ -655,7 +655,7 @@ class DesiredState:
     users: tuple[DesiredGenericResource, ...] = ()
     settings: tuple[DesiredGenericResource, ...] = ()
     source_files: tuple[str, ...] = ()
-    api_version: str = "npmctl.io/v1"
+    api_version: str = "npmctl.com/v1"
     schema_version: int = 1
 
     def resources(self) -> tuple[DesiredResource, ...]:

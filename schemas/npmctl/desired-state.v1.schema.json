@@ -5,7 +5,7 @@
   "type": "object",
   "required": ["apiVersion", "schemaVersion"],
   "properties": {
-    "apiVersion": {"const": "npmctl.io/v1"},
+    "apiVersion": {"const": "npmctl.com/v1"},
     "schemaVersion": {"const": 1},
     "certificates": {"type": "array", "items": {"$ref": "#/$defs/certificate"}},
     "access_lists": {"type": "array", "items": {"$ref": "#/$defs/accessList"}},

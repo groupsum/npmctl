@@ -122,7 +122,7 @@ For details, see [deploy/npm/README.md](deploy/npm/README.md).
 A minimal proxy host:
 
 ```yaml
-apiVersion: npmctl.io/v1
+apiVersion: npmctl.com/v1
 schemaVersion: 1
 proxy_hosts:
   - domain_names: [app.example.com]
@@ -138,7 +138,7 @@ proxy_hosts:
 A proxy host with certificate and access-list references:
 
 ```yaml
-apiVersion: npmctl.io/v1
+apiVersion: npmctl.com/v1
 schemaVersion: 1
 certificates:
   - name: wildcard-example

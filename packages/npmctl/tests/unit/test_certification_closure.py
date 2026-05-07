@@ -329,10 +329,10 @@ def test_loader_error_edges(tmp_path: Path, monkeypatch) -> None:
     header.write_text("apiVersion: bad\nschemaVersion: 1\n", encoding="utf-8")
     with pytest.raises(ValidationError, match="apiVersion"):
         load_desired_state(header)
-    header.write_text("apiVersion: npmctl.io/v1\nschemaVersion: 2\n", encoding="utf-8")
+    header.write_text("apiVersion: npmctl.com/v1\nschemaVersion: 2\n", encoding="utf-8")
     with pytest.raises(ValidationError, match="schemaVersion"):
         load_desired_state(header)
-    header.write_text("apiVersion: npmctl.io/v1\nschemaVersion: 1\nproxy_hosts: {}\n", encoding="utf-8")
+    header.write_text("apiVersion: npmctl.com/v1\nschemaVersion: 1\nproxy_hosts: {}\n", encoding="utf-8")
     with pytest.raises(ValidationError, match="proxy_hosts"):
         load_desired_state(header)
 
@@ -344,14 +344,14 @@ def test_loader_error_edges(tmp_path: Path, monkeypatch) -> None:
         return original(self, *args, **kwargs)
 
     io_path = tmp_path / "io.yaml"
-    io_path.write_text("apiVersion: npmctl.io/v1\nschemaVersion: 1\n", encoding="utf-8")
+    io_path.write_text("apiVersion: npmctl.com/v1\nschemaVersion: 1\n", encoding="utf-8")
     monkeypatch.setattr(Path, "read_text", fail_read)
     with pytest.raises(ValidationError, match="failed to read"):
         load_desired_state(io_path)
     monkeypatch.undo()
     duplicate = tmp_path / "duplicate.yaml"
     duplicate.write_text(
-        "apiVersion: npmctl.io/v1\nschemaVersion: 1\nsettings:\n"
+        "apiVersion: npmctl.com/v1\nschemaVersion: 1\nsettings:\n"
         "- name: theme\n  meta: {managed_by: npmctl, owner: owner-a, resource_id: one}\n"
         "- name: theme\n  meta: {managed_by: npmctl, owner: owner-a, resource_id: two}\n",
         encoding="utf-8",
@@ -360,7 +360,7 @@ def test_loader_error_edges(tmp_path: Path, monkeypatch) -> None:
         load_desired_state(duplicate)
     bad_ref = tmp_path / "bad-ref.yaml"
     bad_ref.write_text(
-        "apiVersion: npmctl.io/v1\nschemaVersion: 1\nproxy_hosts:\n"
+        "apiVersion: npmctl.com/v1\nschemaVersion: 1\nproxy_hosts:\n"
         "- domain_names: [app.example.com]\n  forward_host: app\n  forward_port: 3000\n"
         "  certificate_ref: missing\n  access_list_ref: missing\n"
         "  meta: {managed_by: npmctl, owner: owner-a, resource_id: proxy}\n",
@@ -370,7 +370,7 @@ def test_loader_error_edges(tmp_path: Path, monkeypatch) -> None:
         load_desired_state(bad_ref)
     bad_acl_ref = tmp_path / "bad-acl-ref.yaml"
     bad_acl_ref.write_text(
-        "apiVersion: npmctl.io/v1\nschemaVersion: 1\nproxy_hosts:\n"
+        "apiVersion: npmctl.com/v1\nschemaVersion: 1\nproxy_hosts:\n"
         "- domain_names: [app.example.com]\n  forward_host: app\n  forward_port: 3000\n"
         "  access_list_ref: missing\n"
         "  meta: {managed_by: npmctl, owner: owner-a, resource_id: proxy}\n",
@@ -405,7 +405,7 @@ def test_config_and_migration_edges(tmp_path: Path, monkeypatch) -> None:
     from npmctl.migrations.registry import migrate_document, migrate_path, needs_migration
 
     assert needs_migration({}) is True
-    current = {"apiVersion": "npmctl.io/v1", "schemaVersion": 1}
+    current = {"apiVersion": "npmctl.com/v1", "schemaVersion": 1}
     assert migrate_document(current) == (current, False, 1)
     with pytest.raises(MigrationError):
         migrate_document([])
@@ -1001,7 +1001,7 @@ def test_schema_and_plugin_edges(tmp_path: Path, monkeypatch) -> None:
     desired_file.write_text(
         json.dumps(
             {
-                "apiVersion": "npmctl.io/v1",
+                "apiVersion": "npmctl.com/v1",
                 "schemaVersion": 1,
                 "plugin_resources": [{"provider": "res", "payload": {"incoming_port": 9443}}],
                 "external_certificates": [
@@ -1067,7 +1067,9 @@ def test_schema_and_plugin_edges(tmp_path: Path, monkeypatch) -> None:
         ({"external_certificates": [{"provider": "cert"}]}, "reference"),
     ):
         bad_file = tmp_path / f"bad-{abs(hash(message))}.json"
-        bad_file.write_text(json.dumps({"apiVersion": "npmctl.io/v1", "schemaVersion": 1, **payload}), encoding="utf-8")
+        bad_file.write_text(
+            json.dumps({"apiVersion": "npmctl.com/v1", "schemaVersion": 1, **payload}), encoding="utf-8"
+        )
         with pytest.raises(ValidationError, match=message):
             load_desired_state(bad_file, plugin_registry=discovered)
 
@@ -1153,7 +1155,7 @@ def test_schema_and_plugin_edges(tmp_path: Path, monkeypatch) -> None:
     mixed_file.write_text(
         json.dumps(
             {
-                "apiVersion": "npmctl.io/v1",
+                "apiVersion": "npmctl.com/v1",
                 "schemaVersion": 1,
                 "plugin_resources": [
                     {"provider": "redir", "payload": {}},

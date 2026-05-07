@@ -75,7 +75,7 @@ def test_json_error_output_shape_for_validation_errors(tmp_path: Path, capsys) -
         "ok": False,
         "error": {
             "code": "validation_error",
-            "message": f"{path}.apiVersion must be 'npmctl.io/v1'; run npmctl migrate if needed",
+            "message": f"{path}.apiVersion must be 'npmctl.com/v1'; run npmctl migrate if needed",
         },
     }
 
@@ -144,7 +144,7 @@ def test_exit_code_mapping_for_conflict_api_capability_and_migration_errors(
     assert main(["schema", "check", "--schema", str(missing_caps)]) == EXIT_CAPABILITY
 
     future = tmp_path / "future.yaml"
-    future.write_text("apiVersion: npmctl.io/v1\nschemaVersion: 999\n", encoding="utf-8")
+    future.write_text("apiVersion: npmctl.com/v1\nschemaVersion: 999\n", encoding="utf-8")
     assert main(["migrate", str(future)]) == EXIT_USAGE_OR_VALIDATION
 
     class FailingClient:

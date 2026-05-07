@@ -57,7 +57,7 @@ npmctl --base-url http://127.0.0.1:81/api --identity admin@example.com --secret 
 Every managed resource needs npmctl ownership metadata:
 
 ```yaml
-apiVersion: npmctl.io/v1
+apiVersion: npmctl.com/v1
 schemaVersion: 1
 proxy_hosts:
   - domain_names: [app.example.com]
@@ -73,7 +73,7 @@ proxy_hosts:
 References use `resource_id` values:
 
 ```yaml
-apiVersion: npmctl.io/v1
+apiVersion: npmctl.com/v1
 schemaVersion: 1
 certificates:
   - name: wildcard-example

@@ -1,0 +1,23 @@
+---
+name: npmctl-lander
+
+services:
+  lander:
+    build:
+      context: .
+    container_name: npmctl_lander
+    restart: unless-stopped
+    networks:
+      - npmctl_lander_net
+    labels:
+      npmctl.managed: "true"
+      npmctl.owner: npmctl-lander
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+networks:
+  npmctl_lander_net:
+    name: npmctl_lander_net

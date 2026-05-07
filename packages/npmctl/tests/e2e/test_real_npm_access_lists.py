@@ -34,7 +34,7 @@ def test_real_npm_access_list_create_readback_update_delete_and_proxy_reference(
     cleanup_marker(npm, run)
     try:
         desired = {
-            "apiVersion": "npmctl.io/v1",
+            "apiVersion": "npmctl.com/v1",
             "schemaVersion": 1,
             "access_lists": [
                 {
@@ -93,7 +93,7 @@ def test_missing_access_list_ref_fails_before_apply(tmp_path: Path) -> None:
     require_real_npm()
     run = marker()
     missing = {
-        "apiVersion": "npmctl.io/v1",
+        "apiVersion": "npmctl.com/v1",
         "schemaVersion": 1,
         "proxy_hosts": [
             {

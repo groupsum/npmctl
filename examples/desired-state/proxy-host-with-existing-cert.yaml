@@ -1,5 +1,5 @@
 ---
-apiVersion: npmctl.io/v1
+apiVersion: npmctl.com/v1
 schemaVersion: 1
 proxy_hosts:
   - domain_names: [cert-id.example.com]
