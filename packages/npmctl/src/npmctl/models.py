@@ -12,6 +12,8 @@ from typing import Any, ClassVar
 from npmctl.errors import ValidationError
 from npmctl.metadata import ManagedIdentity, identity_from_meta, validate_metadata
 
+ResourceId = int | str
+
 _DOMAIN_LABEL_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
 _FORWARD_HOST_PATTERN = re.compile(r"^[A-Za-z0-9_.:-]+$")
 _NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:/ -]{0,127}$")
@@ -512,7 +514,7 @@ class ExistingResource:
     """Existing resource read from NPM."""
 
     kind: ResourceKind
-    id: int
+    id: ResourceId
     raw: dict[str, Any]
     natural_key: Any
     domain_names: tuple[str, ...] = ()
@@ -564,6 +566,17 @@ class ExistingResource:
     @classmethod
     def from_generic(cls, kind: ResourceKind, raw: Mapping[str, Any]) -> ExistingResource:
         item = dict(raw)
+        if kind == ResourceKind.SETTING:
+            resource_id = _raw_id(item, allow_string=True)
+            name = str(item.get("name") or item.get("key") or resource_id)
+            return cls(
+                kind=kind,
+                id=resource_id,
+                raw=item,
+                natural_key=name,
+                name=name,
+                identity=identity_from_meta(item.get("meta")),
+            )
         if kind in {ResourceKind.REDIRECTION_HOST, ResourceKind.DEAD_HOST}:
             domain_names = canonical_domain_set(
                 item.get("domain_names", []), path=f"{kind.value}.domain_names", allow_empty=True
@@ -589,7 +602,7 @@ class ExistingResource:
                 name=str(natural_key),
                 identity=identity_from_meta(item.get("meta")),
             )
-        name = str(item.get("name") or item.get("email") or item.get("key") or f"{kind.value}-{_raw_id(item)}")
+        name = str(item.get("name") or item.get("email") or f"{kind.value}-{_raw_id(item)}")
         return cls(
             kind=kind,
             id=_raw_id(item),
@@ -610,11 +623,18 @@ class ExistingResource:
         }
 
 
-def _raw_id(item: Mapping[str, Any]) -> int:
+def _raw_id(item: Mapping[str, Any], *, allow_string: bool = False) -> ResourceId:
     raw_id = item.get("id")
-    if isinstance(raw_id, bool) or not isinstance(raw_id, int) or raw_id < 1:
+    if isinstance(raw_id, bool):
         raise ValidationError("existing API object must contain positive integer id")
-    return raw_id
+    if isinstance(raw_id, int):
+        if raw_id >= 1:
+            return raw_id
+    elif allow_string and isinstance(raw_id, str) and raw_id.strip():
+        return raw_id
+    if allow_string:
+        raise ValidationError("existing API object must contain positive integer or non-empty string id")
+    raise ValidationError("existing API object must contain positive integer id")
 
 
 @dataclass(frozen=True, slots=True)

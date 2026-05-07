@@ -133,6 +133,27 @@ def test_refresh_uses_existing_token_without_recursive_refresh(monkeypatch) -> N
     assert session.calls[1]["headers"]["Authorization"] == "Bearer new-token"
 
 
+def test_settings_accept_string_ids_from_real_npm() -> None:
+    client, session = _client(
+        [
+            FakeResponse(200, [{"id": "default-site", "name": "Default Site", "value": "congratulations"}]),
+            FakeResponse(200, {"id": "default-site", "name": "Default Site", "value": "updated"}),
+            FakeResponse(200, True),
+        ]
+    )
+    client._token = "token-value"
+    client._expires = int(time.time()) + 3600
+
+    settings = client.list_resource(ResourceKind.SETTING)
+
+    assert settings[0].id == "default-site"
+    assert settings[0].natural_key == "Default Site"
+    assert client.update_resource(ResourceKind.SETTING, settings[0].id, {"value": "updated"}).id == "default-site"
+    assert client.delete_resource(ResourceKind.SETTING, settings[0].id)
+    assert session.calls[1]["url"].endswith("/settings/default-site")
+    assert session.calls[2]["url"].endswith("/settings/default-site")
+
+
 def test_api_errors_redact_configured_secrets_and_sensitive_markers() -> None:
     client, _ = _client(
         [

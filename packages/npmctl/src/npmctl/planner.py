@@ -53,7 +53,7 @@ class PlanConflict:
     kind: ResourceKind | None = None
     owner: str | None = None
     resource_id: str | None = None
-    existing_id: int | None = None
+    existing_id: int | str | None = None
     domain: str | None = None
 
     def to_dict(self) -> dict[str, Any]:

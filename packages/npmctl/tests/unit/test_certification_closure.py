@@ -287,6 +287,16 @@ def test_generic_resource_model_edges_and_state_accessors() -> None:
         DesiredGenericResource.from_mapping(ResourceKind.PROXY_HOST, {"meta": META}, path="generic")
     with pytest.raises(ValidationError):
         ExistingResource.from_proxy_host({"id": True, "domain_names": []})
+    assert (
+        ExistingResource.from_generic(ResourceKind.SETTING, {"id": "default-site", "name": "Default Site"}).id
+        == "default-site"
+    )
+    for raw in ({"id": ""}, {"id": 0}, {"id": "not-an-int", "domain_names": []}):
+        with pytest.raises(ValidationError):
+            if "domain_names" in raw:
+                ExistingResource.from_proxy_host(raw)
+            else:
+                ExistingResource.from_generic(ResourceKind.SETTING, raw)
     assert DesiredState().resources_by_kind("bad") == ()  # type: ignore[arg-type]
     assert ExistingState().resources_by_kind("bad") == ()  # type: ignore[arg-type]
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from npmctl.models import ResourceKind
+from npmctl.models import ResourceId, ResourceKind
 
 
 @dataclass(frozen=True, slots=True)
@@ -14,7 +14,7 @@ class ResourceContract:
     kind: ResourceKind
     collection_path: str
 
-    def item_path(self, resource_id: int) -> str:
+    def item_path(self, resource_id: ResourceId) -> str:
         return f"{self.collection_path}/{resource_id}"
 
 

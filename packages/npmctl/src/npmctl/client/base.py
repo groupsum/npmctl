@@ -11,7 +11,7 @@ import requests
 
 from npmctl.client.contracts import CONTRACTS
 from npmctl.errors import ApiError, CapabilityError
-from npmctl.models import ExistingResource, ExistingState, ResourceKind
+from npmctl.models import ExistingResource, ExistingState, ResourceId, ResourceKind
 from npmctl.schema import Capabilities, ResourceCapabilities
 
 _TRANSIENT_STATUSES = frozenset({502, 503, 504})
@@ -106,13 +106,13 @@ class NpmClient:
         return _parse_created(kind, data)
 
     def update_resource(
-        self, kind: ResourceKind, resource_id: int, payload: Mapping[str, Any], *, method: str = "put"
+        self, kind: ResourceKind, resource_id: ResourceId, payload: Mapping[str, Any], *, method: str = "put"
     ) -> ExistingResource:
         contract = CONTRACTS[kind]
         data = self._request(method, contract.item_path(resource_id), authenticated=True, json=dict(payload))
         return _parse_created(kind, data)
 
-    def delete_resource(self, kind: ResourceKind, resource_id: int) -> bool:
+    def delete_resource(self, kind: ResourceKind, resource_id: ResourceId) -> bool:
         contract = CONTRACTS[kind]
         data = self._request("delete", contract.item_path(resource_id), authenticated=True, allow_empty=True)
         return data is True or data == {} or data is None
