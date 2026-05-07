@@ -8,6 +8,7 @@ import yaml
 from npmctl.errors import MigrationError, ValidationError
 from npmctl.loader import load_desired_state
 from npmctl.migrations import migrate_document, migrate_path
+from npmctl.migrations.v2 import CURRENT as CURRENT_V2
 
 
 def test_load_desired_state_full(desired_file: Path) -> None:
@@ -15,6 +16,76 @@ def test_load_desired_state_full(desired_file: Path) -> None:
     assert len(state.proxy_hosts) == 1
     assert len(state.certificates) == 1
     assert len(state.access_lists) == 1
+
+
+def test_load_desired_state_dns_records(tmp_path: Path) -> None:
+    path = tmp_path / "dns.yaml"
+    path.write_text(
+        yaml.safe_dump(
+            {
+                "apiVersion": "npmctl.com/v1",
+                "schemaVersion": 2,
+                "dns_records": [
+                    {
+                        "provider": "namecheap",
+                        "zone": "example.com",
+                        "type": "A",
+                        "name": "@",
+                        "value": "192.0.2.10",
+                        "meta": {"managed_by": "npmctl", "owner": "workload-a", "resource_id": "dns.root"},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    state = load_desired_state(path)
+
+    assert state.dns_records[0].natural_key == ("namecheap", "example.com", "@", "A")
+    assert state.owners == frozenset({"workload-a"})
+
+
+def test_load_rejects_duplicate_dns_record_identity_and_natural_key(tmp_path: Path) -> None:
+    base = {
+        "provider": "namecheap",
+        "zone": "example.com",
+        "type": "A",
+        "name": "@",
+        "value": "192.0.2.10",
+        "meta": {"managed_by": "npmctl", "owner": "workload-a", "resource_id": "dns.root"},
+    }
+    path = tmp_path / "dns.yaml"
+    path.write_text(
+        yaml.safe_dump(
+            {
+                "apiVersion": "npmctl.com/v1",
+                "schemaVersion": 2,
+                "dns_records": [base, base | {"value": "192.0.2.11"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValidationError, match="duplicate meta.resource_id"):
+        load_desired_state(path)
+
+    path.write_text(
+        yaml.safe_dump(
+            {
+                "apiVersion": "npmctl.com/v1",
+                "schemaVersion": 2,
+                "dns_records": [
+                    base,
+                    base | {"meta": {"managed_by": "npmctl", "owner": "workload-a", "resource_id": "dns.root-2"}},
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValidationError, match="duplicate dns_record natural key"):
+        load_desired_state(path)
 
 
 def test_load_rejects_missing_schema_header(tmp_path: Path, desired_doc) -> None:
@@ -48,7 +119,7 @@ def test_load_rejects_duplicate_metadata_identities_across_files(tmp_path: Path,
     first = dict(desired_doc)
     second = {
         "apiVersion": "npmctl.com/v1",
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "proxy_hosts": [
             {
                 "domain_names": ["other.example.com"],
@@ -78,7 +149,7 @@ def test_load_discovers_directory_files_in_stable_order(tmp_path: Path) -> None:
             yaml.safe_dump(
                 {
                     "apiVersion": "npmctl.com/v1",
-                    "schemaVersion": 1,
+                    "schemaVersion": 2,
                     "proxy_hosts": [
                         {
                             "domain_names": [domain],
@@ -109,11 +180,21 @@ def test_load_rejects_malformed_or_non_object_documents(tmp_path: Path, content:
 
 
 def test_migrate_legacy_document_adds_v1_headers() -> None:
+    assert CURRENT_V2 == 2
     migrated, changed, before = migrate_document({"proxy_hosts": []})
     assert changed is True
     assert before is None
     assert migrated["apiVersion"] == "npmctl.com/v1"
-    assert migrated["schemaVersion"] == 1
+    assert migrated["schemaVersion"] == 2
+    assert migrated["dns_records"] == []
+
+
+def test_migrate_v1_document_adds_dns_records() -> None:
+    migrated, changed, before = migrate_document({"apiVersion": "npmctl.com/v1", "schemaVersion": 1})
+    assert changed is True
+    assert before == 1
+    assert migrated["schemaVersion"] == 2
+    assert migrated["dns_records"] == []
 
 
 def test_migrate_path_check_and_write(tmp_path: Path) -> None:

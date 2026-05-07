@@ -1,0 +1,18 @@
+[project]
+name = "npmctl-namecheap"
+version = "0.1.0"
+description = "Namecheap DNS provider extension for npmctl."
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+license = "Apache-2.0"
+authors = [{ name = "npmctl contributors" }]
+dependencies = [
+  "requests>=2.32.0",
+]
+
+[project.entry-points."npmctl.dns_providers"]
+namecheap = "npmctl_namecheap.provider:NamecheapDnsProvider"
+
+[build-system]
+requires = ["uv_build>=0.11.8,<0.12"]
+build-backend = "uv_build"

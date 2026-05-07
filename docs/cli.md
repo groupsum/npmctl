@@ -19,6 +19,10 @@
 - `npmctl compliance artifacts --output-dir DIR`: generate SBOM, provenance, scan, and gate artifacts.
 - `npmctl compliance gate --artifact-dir DIR`: fail closed when required compliance artifacts are missing or failing.
 - `npmctl plugins list`: discover configured and entry-point plugin providers.
+- `npmctl dns providers`: list discovered DNS providers.
+- `npmctl dns doctor --provider PROVIDER`: validate one DNS provider is loaded.
+- `npmctl dns zones --provider PROVIDER`: list zones for one DNS provider.
+- `npmctl dns records --provider PROVIDER --zone ZONE`: list records for one DNS provider zone.
 
 ## Common options
 

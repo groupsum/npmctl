@@ -33,16 +33,30 @@ class CertificateProvider(Protocol):
         """Resolve a certificate reference into an NPM-compatible payload."""
 
 
+class DnsProvider(Protocol):
+    """Provider contract for DNS zone and record inspection."""
+
+    name: str
+
+    def zones(self) -> tuple[str, ...]:
+        """Return zones available to the configured provider account."""
+
+    def records(self, zone: str) -> tuple[dict[str, Any], ...]:
+        """Return DNS records for one zone."""
+
+
 @dataclass(slots=True)
 class PluginRegistry:
     """In-memory plugin registry used by tests and embedded consumers."""
 
     resource_providers: dict[str, ResourceProvider]
     certificate_providers: dict[str, CertificateProvider]
+    dns_providers: dict[str, DnsProvider]
 
     def __init__(self) -> None:
         self.resource_providers = {}
         self.certificate_providers = {}
+        self.dns_providers = {}
 
     def register_resource_provider(self, name: str, provider: ResourceProvider) -> None:
         self.resource_providers[name] = provider
@@ -50,10 +64,14 @@ class PluginRegistry:
     def register_certificate_provider(self, name: str, provider: CertificateProvider) -> None:
         self.certificate_providers[name] = provider
 
+    def register_dns_provider(self, name: str, provider: DnsProvider) -> None:
+        self.dns_providers[name] = provider
+
     def to_dict(self) -> dict[str, list[str]]:
         return {
             "resource_providers": sorted(self.resource_providers),
             "certificate_providers": sorted(self.certificate_providers),
+            "dns_providers": sorted(self.dns_providers),
         }
 
     @classmethod
@@ -64,6 +82,7 @@ class PluginRegistry:
         groups = entry_points if entry_points is not None else metadata.entry_points()
         _load_group(registry, groups, "npmctl.resource_providers", "resource")
         _load_group(registry, groups, "npmctl.certificate_providers", "certificate")
+        _load_group(registry, groups, "npmctl.dns_providers", "dns")
         return registry
 
 
@@ -75,9 +94,12 @@ def _load_group(registry: PluginRegistry, groups: metadata.EntryPoints, group: s
         if provider_type == "resource":
             _validate_resource_provider(entry_point.name, provider)
             registry.register_resource_provider(entry_point.name, provider)
-        else:
+        elif provider_type == "certificate":
             _validate_certificate_provider(entry_point.name, provider)
             registry.register_certificate_provider(entry_point.name, provider)
+        else:
+            _validate_dns_provider(entry_point.name, provider)
+            registry.register_dns_provider(entry_point.name, provider)
 
 
 def _validate_resource_provider(name: str, provider: Any) -> None:
@@ -93,3 +115,9 @@ def _validate_certificate_provider(name: str, provider: Any) -> None:
     for attr in ("name", "resolve"):
         if not hasattr(provider, attr):
             raise ValueError(f"certificate provider {name!r} missing {attr}")
+
+
+def _validate_dns_provider(name: str, provider: Any) -> None:
+    for attr in ("name", "zones", "records"):
+        if not hasattr(provider, attr):
+            raise ValueError(f"dns provider {name!r} missing {attr}")

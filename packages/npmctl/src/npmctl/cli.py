@@ -140,6 +140,17 @@ def build_parser() -> argparse.ArgumentParser:
     plugins_sub = plugins.add_subparsers(dest="plugins_command", required=True)
     plugins_sub.add_parser("list", help="List discovered plugin providers")
 
+    dns = sub.add_parser("dns", help="Inspect DNS extension providers")
+    dns_sub = dns.add_subparsers(dest="dns_command", required=True)
+    dns_sub.add_parser("providers", help="List discovered DNS providers")
+    dns_doctor = dns_sub.add_parser("doctor", help="Validate one DNS provider can be loaded")
+    dns_doctor.add_argument("--provider", required=True)
+    dns_zones = dns_sub.add_parser("zones", help="List zones for a DNS provider")
+    dns_zones.add_argument("--provider", required=True)
+    dns_records = dns_sub.add_parser("records", help="List records for a DNS provider zone")
+    dns_records.add_argument("--provider", required=True)
+    dns_records.add_argument("--zone", required=True)
+
     return parser
 
 
@@ -189,7 +200,7 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
         return EXIT_OK
 
     if args.command == "version":
-        payload = {"package": "npmctl", "version": __version__, "schema_version": 1, "api_profile": "npm-2.10.4"}
+        payload = {"package": "npmctl", "version": __version__, "schema_version": 2, "api_profile": "npm-2.10.4"}
         text = json.dumps(payload, indent=2, sort_keys=True) if args.json or args.output == "json" else __version__
         write_output("json" if args.json else args.output, payload, text)
         return EXIT_OK
@@ -220,6 +231,9 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
         payload = {"ok": True, "plugins": registry.to_dict()}
         write_output(args.output, payload, json.dumps(payload, indent=2, sort_keys=True))
         return EXIT_OK
+
+    if args.command == "dns":
+        return _dns_command(args)
 
     if args.command == "migrate":
         if args.write and args.check:
@@ -351,6 +365,35 @@ def _schema_command(args: argparse.Namespace, client: NpmClient | None) -> int:
     return EXIT_OK
 
 
+def _dns_command(args: argparse.Namespace) -> int:
+    registry = PluginRegistry.discover()
+    if args.dns_command == "providers":
+        payload = {"ok": True, "providers": sorted(registry.dns_providers)}
+        write_output(args.output, payload, json.dumps(payload, indent=2, sort_keys=True))
+        return EXIT_OK
+    provider = registry.dns_providers.get(args.provider)
+    if provider is None:
+        raise ValidationError(f"unknown DNS provider: {args.provider}")
+    if args.dns_command == "doctor":
+        payload = {"ok": True, "provider": args.provider}
+        write_output(args.output, payload, json.dumps(payload, indent=2, sort_keys=True))
+        return EXIT_OK
+    if args.dns_command == "zones":
+        payload = {"ok": True, "provider": args.provider, "zones": list(provider.zones())}
+        write_output(args.output, payload, json.dumps(payload, indent=2, sort_keys=True))
+        return EXIT_OK
+    if args.dns_command == "records":
+        payload = {
+            "ok": True,
+            "provider": args.provider,
+            "zone": args.zone,
+            "records": list(provider.records(args.zone)),
+        }
+        write_output(args.output, payload, json.dumps(payload, indent=2, sort_keys=True))
+        return EXIT_OK
+    raise ValidationError(f"unsupported dns command: {args.dns_command}")  # pragma: no cover - argparse prevents this.
+
+
 def _require_api_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
     if not (args.base_url and args.identity and args.secret):
         parser.error("--base-url, --identity, and --secret are required, or set NPM_BASE_URL/NPM_IDENTITY/NPM_SECRET")
@@ -368,6 +411,7 @@ def _desired_summary(desired: Any) -> dict[str, Any]:
         "streams": len(desired.streams),
         "users": len(desired.users),
         "settings": len(desired.settings),
+        "dns_records": len(desired.dns_records),
         "source_files": list(desired.source_files),
     }
 
@@ -382,7 +426,8 @@ def _format_validate_text(payload: dict[str, Any]) -> str:
         f"dead hosts: {payload['dead_hosts']}\n"
         f"streams: {payload['streams']}\n"
         f"users: {payload['users']}\n"
-        f"settings: {payload['settings']}"
+        f"settings: {payload['settings']}\n"
+        f"dns records: {payload['dns_records']}"
     )
 
 
@@ -395,7 +440,10 @@ def _redact_cli_message(message: str, args: argparse.Namespace) -> str:
 
 
 def _completion_script(shell: str) -> str:
-    commands = "validate migrate health doctor env version completion schema plan apply adopt drift audit-log compliance plugins"
+    commands = (
+        "validate migrate health doctor env version completion schema plan apply adopt drift audit-log compliance "
+        "plugins dns"
+    )
     if shell == "powershell":
         return f"Register-ArgumentCompleter -Native -CommandName npmctl -ScriptBlock {{ param($wordToComplete) '{commands}'.Split(' ') | Where-Object {{ $_ -like \"$wordToComplete*\" }} }}\n"
     if shell == "zsh":

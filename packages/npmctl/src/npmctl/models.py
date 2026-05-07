@@ -48,6 +48,18 @@ class ResourceKind(StrEnum):
     SETTING = "setting"
 
 
+class DnsRecordType(StrEnum):
+    """Supported DNS record types for provider-backed DNS records."""
+
+    A = "A"
+    AAAA = "AAAA"
+    CNAME = "CNAME"
+    TXT = "TXT"
+    MX = "MX"
+    SRV = "SRV"
+    CAA = "CAA"
+
+
 class PlanAction(StrEnum):
     """Plan operation kinds."""
 
@@ -515,6 +527,96 @@ DesiredResource = DesiredProxyHost | DesiredCertificate | DesiredAccessList | De
 
 
 @dataclass(frozen=True, slots=True)
+class DesiredDnsRecord:
+    """Desired provider-backed DNS record declaration."""
+
+    provider: str
+    zone: str
+    type: DnsRecordType
+    name: str
+    value: str
+    ttl: int
+    meta: dict[str, Any]
+    priority: int | None = None
+
+    @classmethod
+    def from_mapping(cls, raw: Mapping[str, Any], *, path: str) -> DesiredDnsRecord:
+        raw = require_mapping(raw, path=path)
+        missing = [name for name in ("provider", "zone", "type", "name", "value", "meta") if name not in raw]
+        if missing:
+            raise ValidationError(f"{path} missing required keys: {', '.join(missing)}")
+        provider = raw["provider"]
+        if not isinstance(provider, str) or not provider.strip():
+            raise ValidationError(f"{path}.provider must be a non-empty string")
+        record_name = raw["name"]
+        if not isinstance(record_name, str) or not record_name.strip():
+            raise ValidationError(f"{path}.name must be a non-empty string")
+        value = raw["value"]
+        if not isinstance(value, str) or not value.strip():
+            raise ValidationError(f"{path}.value must be a non-empty string")
+        record_type = _dns_record_type(raw["type"], path=f"{path}.type")
+        ttl = optional_int(raw.get("ttl", 300), path=f"{path}.ttl", minimum=60)
+        priority = optional_int(raw.get("priority"), path=f"{path}.priority")
+        if ttl is None:  # pragma: no cover - default and optional_int contract prevent this.
+            raise ValidationError(f"{path}.ttl must be an integer")
+        if record_type == DnsRecordType.MX and priority is None:
+            raise ValidationError(f"{path}.priority is required for MX records")
+        if record_type != DnsRecordType.MX and priority is not None:
+            raise ValidationError(f"{path}.priority is only supported for MX records")
+        return cls(
+            provider=provider.strip().lower(),
+            zone=canonicalize_domain(raw["zone"], path=f"{path}.zone"),
+            type=record_type,
+            name=_canonicalize_dns_record_name(record_name),
+            value=value.strip(),
+            ttl=ttl,
+            priority=priority,
+            meta=validate_metadata(raw["meta"], path=path),
+        )
+
+    @property
+    def identity(self) -> ManagedIdentity:
+        return ManagedIdentity(owner=str(self.meta["owner"]), resource_id=str(self.meta["resource_id"]))
+
+    @property
+    def natural_key(self) -> tuple[str, str, str, str]:
+        return (self.provider, self.zone, self.name, self.type.value)
+
+    def to_payload(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "provider": self.provider,
+            "zone": self.zone,
+            "type": self.type.value,
+            "name": self.name,
+            "value": self.value,
+            "ttl": self.ttl,
+            "meta": dict(self.meta),
+        }
+        if self.priority is not None:
+            payload["priority"] = self.priority
+        return payload
+
+    def comparable_payload(self) -> dict[str, Any]:
+        return self.to_payload()
+
+
+def _dns_record_type(value: Any, *, path: str) -> DnsRecordType:
+    if not isinstance(value, str):
+        raise ValidationError(f"{path} must be a string")
+    try:
+        return DnsRecordType(value.strip().upper())
+    except ValueError as exc:
+        raise ValidationError(f"{path} must be one of {[item.value for item in DnsRecordType]}") from exc
+
+
+def _canonicalize_dns_record_name(value: str) -> str:
+    name = value.strip().lower().rstrip(".")
+    if name == "@":
+        return name
+    return canonicalize_domain(name, path="dns_record.name")
+
+
+@dataclass(frozen=True, slots=True)
 class ExistingResource:
     """Existing resource read from NPM."""
 
@@ -654,9 +756,10 @@ class DesiredState:
     streams: tuple[DesiredGenericResource, ...] = ()
     users: tuple[DesiredGenericResource, ...] = ()
     settings: tuple[DesiredGenericResource, ...] = ()
+    dns_records: tuple[DesiredDnsRecord, ...] = ()
     source_files: tuple[str, ...] = ()
     api_version: str = "npmctl.com/v1"
-    schema_version: int = 1
+    schema_version: int = 2
 
     def resources(self) -> tuple[DesiredResource, ...]:
         return (
@@ -691,7 +794,12 @@ class DesiredState:
 
     @property
     def owners(self) -> frozenset[str]:
-        return frozenset(resource.identity.owner for resource in self.resources())
+        return frozenset(
+            [
+                *(resource.identity.owner for resource in self.resources()),
+                *(record.identity.owner for record in self.dns_records),
+            ]
+        )
 
 
 @dataclass(frozen=True, slots=True)

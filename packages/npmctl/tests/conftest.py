@@ -15,7 +15,7 @@ import yaml
 def desired_doc() -> dict[str, Any]:
     return {
         "apiVersion": "npmctl.com/v1",
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "certificates": [
             {
                 "name": "wildcard-example",

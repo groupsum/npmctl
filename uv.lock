@@ -5,6 +5,7 @@ requires-python = ">=3.10, <3.14"
 [manifest]
 members = [
     "npmctl",
+    "npmctl-namecheap",
     "npmctl-workspace",
 ]
 
@@ -261,6 +262,17 @@ requires-dist = [
     { name = "requests", specifier = ">=2.32.0" },
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.0.1" },
 ]
+
+[[package]]
+name = "npmctl-namecheap"
+version = "0.1.0"
+source = { editable = "packages/npmctl-namecheap" }
+dependencies = [
+    { name = "requests" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "requests", specifier = ">=2.32.0" }]
 
 [[package]]
 name = "npmctl-workspace"

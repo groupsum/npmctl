@@ -17,10 +17,11 @@ It manages:
 - Streams
 - Users
 - Settings
+- Provider-backed DNS records
 
 It also provides read-only audit log reporting, operator diagnostics, compliance
 artifact generation, and plugin contracts for future custom resource and
-certificate providers.
+certificate and DNS providers.
 
 ## Safety Model
 
@@ -123,7 +124,7 @@ A minimal proxy host:
 
 ```yaml
 apiVersion: npmctl.com/v1
-schemaVersion: 1
+schemaVersion: 2
 proxy_hosts:
   - domain_names: [app.example.com]
     forward_scheme: http
@@ -139,7 +140,7 @@ A proxy host with certificate and access-list references:
 
 ```yaml
 apiVersion: npmctl.com/v1
-schemaVersion: 1
+schemaVersion: 2
 certificates:
   - name: wildcard-example
     domain_names: ["*.example.com", example.com]
@@ -298,5 +299,7 @@ docker compose -f deploy/npm/compose.ci.yml down
 - [NPM API compatibility](docs/npm-api-compatibility.md)
 - [SSL certificates](docs/ssl-certificates.md)
 - [Access lists](docs/access-lists.md)
+- [DNS records](docs/dns.md)
+- [Namecheap DNS extension](docs/namecheap.md)
 - [Adoption](docs/adoption.md)
 - [GitHub Actions](docs/github-actions.md)

@@ -10,7 +10,7 @@ license = "Apache-2.0"
 package = false
 
 [tool.uv.workspace]
-members = ["packages/npmctl"]
+members = ["packages/npmctl", "packages/npmctl-namecheap"]
 
 [dependency-groups]
 dev = [
@@ -44,7 +44,7 @@ line-ending = "lf"
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers --strict-config --cov=npmctl --cov-report=term-missing"
-testpaths = ["packages/npmctl/tests"]
+testpaths = ["packages/npmctl/tests", "packages/npmctl-namecheap/tests"]
 pythonpath = ["packages/npmctl/src"]
 markers = [
   "integration: integration tests using a local fake NPM API server",

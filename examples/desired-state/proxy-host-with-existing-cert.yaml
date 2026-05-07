@@ -1,6 +1,6 @@
 ---
 apiVersion: npmctl.com/v1
-schemaVersion: 1
+schemaVersion: 2
 proxy_hosts:
   - domain_names: [cert-id.example.com]
     forward_host: app

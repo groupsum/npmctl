@@ -13,6 +13,7 @@ from npmctl.metadata import ManagedIdentity
 from npmctl.models import (
     DesiredAccessList,
     DesiredCertificate,
+    DesiredDnsRecord,
     DesiredGenericResource,
     DesiredProxyHost,
     DesiredResource,
@@ -25,7 +26,7 @@ from npmctl.plugins import PluginRegistry
 
 SUPPORTED_EXTENSIONS = frozenset({".yaml", ".yml", ".json"})
 EXPECTED_API_VERSION = "npmctl.com/v1"
-EXPECTED_SCHEMA_VERSION = 1
+EXPECTED_SCHEMA_VERSION = 2
 
 
 def load_desired_state(path: str | Path, *, plugin_registry: PluginRegistry | None = None) -> DesiredState:
@@ -47,9 +48,12 @@ def load_desired_state(path: str | Path, *, plugin_registry: PluginRegistry | No
     streams: list[DesiredGenericResource] = []
     users: list[DesiredGenericResource] = []
     settings: list[DesiredGenericResource] = []
+    dns_records: list[DesiredDnsRecord] = []
     for file_path in files:
         doc = _read_document(file_path)
         _validate_document_header(doc, path=str(file_path))
+        for index, item in enumerate(doc.get("dns_records") or []):
+            dns_records.append(DesiredDnsRecord.from_mapping(item, path=f"{file_path}.dns_records[{index}]"))
         for index, item in enumerate(doc.get("certificates") or []):
             certificates.append(DesiredCertificate.from_mapping(item, path=f"{file_path}.certificates[{index}]"))
         for index, item in enumerate(doc.get("access_lists") or []):
@@ -108,6 +112,7 @@ def load_desired_state(path: str | Path, *, plugin_registry: PluginRegistry | No
         streams=tuple(streams),
         users=tuple(users),
         settings=tuple(settings),
+        dns_records=tuple(dns_records),
         source_files=tuple(str(file_path) for file_path in files),
     )
     validate_desired_state_integrity(desired)
@@ -155,6 +160,7 @@ def _validate_document_header(doc: dict[str, Any], *, path: str) -> None:
         "streams",
         "users",
         "settings",
+        "dns_records",
         "plugin_resources",
         "external_certificates",
     ):
@@ -251,6 +257,8 @@ def validate_desired_state_integrity(desired: DesiredState) -> None:
 
     resource_ids: dict[str, DesiredResource] = {}
     natural_keys: dict[tuple[ResourceKind, object], DesiredResource] = {}
+    dns_resource_ids: dict[str, DesiredDnsRecord] = {}
+    dns_natural_keys: dict[tuple[str, str, str, str], DesiredDnsRecord] = {}
     domains: dict[str, DesiredProxyHost] = {}
 
     for resource in desired.resources():
@@ -267,6 +275,15 @@ def validate_desired_state_integrity(desired: DesiredState) -> None:
         if natural_key in natural_keys:
             raise ValidationError(f"duplicate {resource.kind.value} natural key: {resource.natural_key}")
         natural_keys[natural_key] = resource
+
+    for record in desired.dns_records:
+        identity = record.identity
+        if identity.resource_id in resource_ids or identity.resource_id in dns_resource_ids:
+            raise ValidationError(f"duplicate meta.resource_id: {identity.resource_id}")
+        dns_resource_ids[identity.resource_id] = record
+        if record.natural_key in dns_natural_keys:
+            raise ValidationError(f"duplicate dns_record natural key: {record.natural_key}")
+        dns_natural_keys[record.natural_key] = record
 
     certificate_ids = {cert.identity.resource_id for cert in desired.certificates}
     access_list_ids = {acl.identity.resource_id for acl in desired.access_lists}

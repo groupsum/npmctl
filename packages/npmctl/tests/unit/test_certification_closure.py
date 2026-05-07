@@ -78,7 +78,12 @@ from npmctl.planner import (
     compute_plan,
     diff_resource,
 )
-from npmctl.plugins import PluginRegistry, _validate_certificate_provider, _validate_resource_provider
+from npmctl.plugins import (
+    PluginRegistry,
+    _validate_certificate_provider,
+    _validate_dns_provider,
+    _validate_resource_provider,
+)
 from npmctl.schema import Capabilities, ResourceCapabilities, _methods, load_openapi_schema
 
 META = {"managed_by": "npmctl", "owner": "owner-a", "resource_id": "rid"}
@@ -326,13 +331,13 @@ def test_loader_error_edges(tmp_path: Path, monkeypatch) -> None:
     with pytest.raises(ValidationError, match="apiVersion"):
         load_desired_state(empty_doc)
     header = tmp_path / "header.yaml"
-    header.write_text("apiVersion: bad\nschemaVersion: 1\n", encoding="utf-8")
+    header.write_text("apiVersion: bad\nschemaVersion: 2\n", encoding="utf-8")
     with pytest.raises(ValidationError, match="apiVersion"):
         load_desired_state(header)
-    header.write_text("apiVersion: npmctl.com/v1\nschemaVersion: 2\n", encoding="utf-8")
+    header.write_text("apiVersion: npmctl.com/v1\nschemaVersion: 999\n", encoding="utf-8")
     with pytest.raises(ValidationError, match="schemaVersion"):
         load_desired_state(header)
-    header.write_text("apiVersion: npmctl.com/v1\nschemaVersion: 1\nproxy_hosts: {}\n", encoding="utf-8")
+    header.write_text("apiVersion: npmctl.com/v1\nschemaVersion: 2\nproxy_hosts: {}\n", encoding="utf-8")
     with pytest.raises(ValidationError, match="proxy_hosts"):
         load_desired_state(header)
 
@@ -344,14 +349,14 @@ def test_loader_error_edges(tmp_path: Path, monkeypatch) -> None:
         return original(self, *args, **kwargs)
 
     io_path = tmp_path / "io.yaml"
-    io_path.write_text("apiVersion: npmctl.com/v1\nschemaVersion: 1\n", encoding="utf-8")
+    io_path.write_text("apiVersion: npmctl.com/v1\nschemaVersion: 2\n", encoding="utf-8")
     monkeypatch.setattr(Path, "read_text", fail_read)
     with pytest.raises(ValidationError, match="failed to read"):
         load_desired_state(io_path)
     monkeypatch.undo()
     duplicate = tmp_path / "duplicate.yaml"
     duplicate.write_text(
-        "apiVersion: npmctl.com/v1\nschemaVersion: 1\nsettings:\n"
+        "apiVersion: npmctl.com/v1\nschemaVersion: 2\nsettings:\n"
         "- name: theme\n  meta: {managed_by: npmctl, owner: owner-a, resource_id: one}\n"
         "- name: theme\n  meta: {managed_by: npmctl, owner: owner-a, resource_id: two}\n",
         encoding="utf-8",
@@ -360,7 +365,7 @@ def test_loader_error_edges(tmp_path: Path, monkeypatch) -> None:
         load_desired_state(duplicate)
     bad_ref = tmp_path / "bad-ref.yaml"
     bad_ref.write_text(
-        "apiVersion: npmctl.com/v1\nschemaVersion: 1\nproxy_hosts:\n"
+        "apiVersion: npmctl.com/v1\nschemaVersion: 2\nproxy_hosts:\n"
         "- domain_names: [app.example.com]\n  forward_host: app\n  forward_port: 3000\n"
         "  certificate_ref: missing\n  access_list_ref: missing\n"
         "  meta: {managed_by: npmctl, owner: owner-a, resource_id: proxy}\n",
@@ -370,7 +375,7 @@ def test_loader_error_edges(tmp_path: Path, monkeypatch) -> None:
         load_desired_state(bad_ref)
     bad_acl_ref = tmp_path / "bad-acl-ref.yaml"
     bad_acl_ref.write_text(
-        "apiVersion: npmctl.com/v1\nschemaVersion: 1\nproxy_hosts:\n"
+        "apiVersion: npmctl.com/v1\nschemaVersion: 2\nproxy_hosts:\n"
         "- domain_names: [app.example.com]\n  forward_host: app\n  forward_port: 3000\n"
         "  access_list_ref: missing\n"
         "  meta: {managed_by: npmctl, owner: owner-a, resource_id: proxy}\n",
@@ -405,8 +410,8 @@ def test_config_and_migration_edges(tmp_path: Path, monkeypatch) -> None:
     from npmctl.migrations.registry import migrate_document, migrate_path, needs_migration
 
     assert needs_migration({}) is True
-    current = {"apiVersion": "npmctl.com/v1", "schemaVersion": 1}
-    assert migrate_document(current) == (current, False, 1)
+    current = {"apiVersion": "npmctl.com/v1", "schemaVersion": 2}
+    assert migrate_document(current) == (current, False, 2)
     with pytest.raises(MigrationError):
         migrate_document([])
     with pytest.raises(MigrationError):
@@ -417,7 +422,7 @@ def test_config_and_migration_edges(tmp_path: Path, monkeypatch) -> None:
     json_file.write_text("null", encoding="utf-8")
     result = migrate_path(json_file, write=True)[0]
     assert result.changed is True
-    assert json.loads(json_file.read_text(encoding="utf-8"))["schemaVersion"] == 1
+    assert json.loads(json_file.read_text(encoding="utf-8"))["schemaVersion"] == 2
     scalar = tmp_path / "scalar.yaml"
     scalar.write_text("- item\n", encoding="utf-8")
     with pytest.raises(MigrationError):
@@ -988,21 +993,35 @@ def test_schema_and_plugin_edges(tmp_path: Path, monkeypatch) -> None:
         def resolve(self, reference: str) -> dict[str, Any]:
             return {"api_payload": {"reference": reference}}
 
+    class Dns:
+        name = "dns"
+
+        def zones(self) -> tuple[str, ...]:
+            return ("example.com",)
+
+        def records(self, zone: str) -> tuple[dict[str, Any], ...]:
+            return ({"zone": zone},)
+
     discovered = PluginRegistry.discover(
         entry_points=EPs(
             [
                 EP("res", "npmctl.resource_providers", Resource),
                 EP("cert", "npmctl.certificate_providers", Cert()),
+                EP("dns", "npmctl.dns_providers", Dns()),
             ]
         )
     )
-    assert discovered.to_dict() == {"resource_providers": ["res"], "certificate_providers": ["cert"]}
+    assert discovered.to_dict() == {
+        "resource_providers": ["res"],
+        "certificate_providers": ["cert"],
+        "dns_providers": ["dns"],
+    }
     desired_file = tmp_path / "plugin-state.json"
     desired_file.write_text(
         json.dumps(
             {
                 "apiVersion": "npmctl.com/v1",
-                "schemaVersion": 1,
+                "schemaVersion": 2,
                 "plugin_resources": [{"provider": "res", "payload": {"incoming_port": 9443}}],
                 "external_certificates": [
                     {
@@ -1058,6 +1077,8 @@ def test_schema_and_plugin_edges(tmp_path: Path, monkeypatch) -> None:
         )
     with pytest.raises(ValueError):
         _validate_certificate_provider("bad", object())
+    with pytest.raises(ValueError):
+        _validate_dns_provider("bad", object())
     for payload, message in (
         ({"plugin_resources": [{"payload": {}}]}, "provider"),
         ({"plugin_resources": [{"provider": "missing", "payload": {}}]}, "unknown resource provider"),
@@ -1068,7 +1089,7 @@ def test_schema_and_plugin_edges(tmp_path: Path, monkeypatch) -> None:
     ):
         bad_file = tmp_path / f"bad-{abs(hash(message))}.json"
         bad_file.write_text(
-            json.dumps({"apiVersion": "npmctl.com/v1", "schemaVersion": 1, **payload}), encoding="utf-8"
+            json.dumps({"apiVersion": "npmctl.com/v1", "schemaVersion": 2, **payload}), encoding="utf-8"
         )
         with pytest.raises(ValidationError, match=message):
             load_desired_state(bad_file, plugin_registry=discovered)
@@ -1156,7 +1177,7 @@ def test_schema_and_plugin_edges(tmp_path: Path, monkeypatch) -> None:
         json.dumps(
             {
                 "apiVersion": "npmctl.com/v1",
-                "schemaVersion": 1,
+                "schemaVersion": 2,
                 "plugin_resources": [
                     {"provider": "redir", "payload": {}},
                     {"provider": "dead", "payload": {}},

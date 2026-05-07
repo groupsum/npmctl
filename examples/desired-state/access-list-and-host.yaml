@@ -1,6 +1,6 @@
 ---
 apiVersion: npmctl.com/v1
-schemaVersion: 1
+schemaVersion: 2
 access_lists:
   - name: private-admins
     api_payload:

@@ -12,11 +12,17 @@ npmctl exposes typed plugin contracts in `npmctl.plugins`.
 
 - `resolve(reference)` returns an NPM-compatible certificate payload.
 
+`DnsProvider` defines the contract for DNS provider inspection:
+
+- `zones()` returns available zones.
+- `records(zone)` returns records for one zone.
+
 `PluginRegistry` is a small in-memory registration surface for embedding and
 tests. It also supports runtime discovery through Python package entry points:
 
 - `npmctl.resource_providers`
 - `npmctl.certificate_providers`
+- `npmctl.dns_providers`
 
 Discovered providers are validated before registration. Invalid providers fail
 predictably instead of being silently ignored, and `npmctl plugins list` reports
@@ -28,3 +34,7 @@ resource `kind`, `identity(payload)`, `natural_key(payload)`, and
 `desired_payload(payload)`. Certificate providers must expose `resolve(reference)`;
 the resolved payload is parsed through the normal certificate model so owner
 scope, metadata validation, planning, and apply behavior remain unchanged.
+
+DNS providers must expose `name`, `zones()`, and `records(zone)`. The
+provider-neutral desired-state model for DNS records is available in schema v2
+as `dns_records`.

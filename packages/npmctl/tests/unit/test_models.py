@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from npmctl.errors import ValidationError
-from npmctl.models import DesiredAccessList, DesiredCertificate, DesiredProxyHost, canonicalize_domain
+from npmctl.models import DesiredAccessList, DesiredCertificate, DesiredDnsRecord, DesiredProxyHost, canonicalize_domain
 
 META = {"managed_by": "npmctl", "owner": "workload-a", "resource_id": "res.one"}
 
@@ -196,3 +196,73 @@ def test_proxy_host_rejects_invalid_advanced_config_shape() -> None:
 def test_certificate_and_access_list_reject_invalid_api_payload(model, raw) -> None:
     with pytest.raises(ValidationError, match="api_payload"):
         model.from_mapping(raw, path="resource")
+
+
+def test_dns_record_happy_path_normalizes_provider_zone_and_name() -> None:
+    record = DesiredDnsRecord.from_mapping(
+        {
+            "provider": "Namecheap",
+            "zone": "Example.Com.",
+            "type": "a",
+            "name": "@",
+            "value": "192.0.2.10",
+            "ttl": 300,
+            "meta": META,
+        },
+        path="dns",
+    )
+
+    assert record.provider == "namecheap"
+    assert record.zone == "example.com"
+    assert record.type == "A"
+    assert record.natural_key == ("namecheap", "example.com", "@", "A")
+    assert record.to_payload()["ttl"] == 300
+    assert record.comparable_payload() == record.to_payload()
+
+
+def test_dns_record_requires_mx_priority_and_rejects_other_priority() -> None:
+    base = {
+        "provider": "namecheap",
+        "zone": "example.com",
+        "name": "mail",
+        "value": "mail.example.com",
+        "meta": META,
+    }
+
+    with pytest.raises(ValidationError, match="priority is required"):
+        DesiredDnsRecord.from_mapping(base | {"type": "MX"}, path="dns")
+
+    with pytest.raises(ValidationError, match="only supported"):
+        DesiredDnsRecord.from_mapping(base | {"type": "A", "priority": 10}, path="dns")
+
+    record = DesiredDnsRecord.from_mapping(base | {"type": "MX", "priority": 10}, path="dns")
+    assert record.to_payload()["priority"] == 10
+
+
+@pytest.mark.parametrize(
+    ("patch", "message"),
+    [
+        ({}, "missing required keys"),
+        ({"provider": ""}, "provider"),
+        ({"name": ""}, "name"),
+        ({"value": ""}, "value"),
+        ({"type": 1}, "type"),
+        ({"type": "BAD"}, "one of"),
+    ],
+)
+def test_dns_record_rejects_invalid_shapes(patch, message: str) -> None:
+    raw = {
+        "provider": "namecheap",
+        "zone": "example.com",
+        "type": "A",
+        "name": "@",
+        "value": "192.0.2.10",
+        "meta": META,
+    }
+    if patch:
+        raw.update(patch)
+    else:
+        raw.pop("value")
+
+    with pytest.raises(ValidationError, match=message):
+        DesiredDnsRecord.from_mapping(raw, path="dns")

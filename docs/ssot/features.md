@@ -1,6 +1,6 @@
 # Features
 
-Generated entries: 135
+Generated entries: 138
 
 | id | title | implementation_status | horizon | target_tier | claims | tests |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -43,6 +43,8 @@ Generated entries: 135
 | feat:dev-schema-fixture-roundtrip | Schema fixture roundtrip gate | implemented | explicit | T2 | clm:development-gate-certification, clm:expanded-feature-scope-planning | tst:development-gate-certification, tst:expanded-feature-scope-planning |
 | feat:dev-type-checking | Development type checking gate | implemented | explicit | T2 | clm:development-gate-certification, clm:expanded-feature-scope-planning | tst:development-gate-certification, tst:expanded-feature-scope-planning |
 | feat:discover-proxy-hosts | Discover current proxy hosts | implemented | current | T2 | clm:create-only-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-client-cli |
+| feat:dns-provider-cli | DNS provider CLI diagnostics | implemented | current | T2 | clm:cli-operator-certification | tst:cli-operator-certification |
+| feat:dns-record-schema-v2 | DNS record schema v2 | implemented | current | T2 | clm:owner-scoped-integrity | tst:unit-migrations |
 | feat:extension-resource-contract-api | Extension resource contract API | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:plugin-runtime-certification | tst:expanded-feature-scope-planning, tst:plugin-runtime-certification |
 | feat:gap-acl-ref-negative | Access-list reference negative coverage | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-acl-ref-negative |
 | feat:gap-apply-adopt-merge | Apply adopt merge coverage | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-apply-adopt-merge |
@@ -117,6 +119,7 @@ Generated entries: 135
 | feat:gap-workflow-semantics | GitHub workflow semantics coverage | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-workflow-semantics |
 | feat:github-actions-gates | Gated GitHub Actions with live NPM gate | implemented | current | T2 | clm:owner-scoped-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
 | feat:metadata-ownership | Validate metadata ownership | implemented | current | T2 | clm:metadata-conflict-guard | tst:integration-fake-npm, tst:unit-planner, tst:unit-validation |
+| feat:namecheap-dns-provider | Namecheap DNS provider package | implemented | current | T2 | clm:plugin-runtime-certification | tst:plugin-runtime-certification |
 | feat:ops-apply-transaction-report | Apply transaction report | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:operational-hardening-certification | tst:expanded-feature-scope-planning, tst:operational-hardening-certification |
 | feat:ops-audit-log-output | Operational audit log output | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:operational-hardening-certification | tst:expanded-feature-scope-planning, tst:operational-hardening-certification |
 | feat:ops-containerized-cli-image | Containerized CLI image | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:operational-hardening-certification | tst:expanded-feature-scope-planning, tst:operational-hardening-certification |

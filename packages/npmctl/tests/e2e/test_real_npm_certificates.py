@@ -36,7 +36,7 @@ def test_real_npm_certificate_create_readback_delete_and_proxy_reference(tmp_pat
     try:
         desired = {
             "apiVersion": "npmctl.com/v1",
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "certificates": [
                 {
                     "name": cert_name,
@@ -104,7 +104,7 @@ def test_missing_and_ambiguous_certificate_refs_fail_before_apply(tmp_path: Path
     run = marker()
     missing = {
         "apiVersion": "npmctl.com/v1",
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "proxy_hosts": [
             {
                 "domain_names": [f"{run}.example.invalid"],

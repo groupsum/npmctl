@@ -18,5 +18,5 @@ Verification:
 - `packages/npmctl/tests/unit/test_expanded_features.py`
 - `.github/workflows/live-npm-gate.yml`
 - `.github/actions/npmctl-real-npm-e2e/action.yml`
-- `schemas/npmctl/desired-state.v1.schema.json`
+- `schemas/npmctl/desired-state.v2.schema.json`
 - `schemas/npmctl/plan-output.v1.schema.json`

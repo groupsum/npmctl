@@ -3,5 +3,5 @@
   "title": "npmctl migration manifest",
   "type": "object",
   "required": ["current_schema_version"],
-  "properties": {"current_schema_version": {"const": 1}}
+  "properties": {"current_schema_version": {"const": 2}}
 }

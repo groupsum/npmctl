@@ -23,7 +23,7 @@ def _expanded_doc() -> dict:
     meta = {"managed_by": "npmctl", "owner": "workload-a", "resource_id": "resource.one"}
     return {
         "apiVersion": "npmctl.com/v1",
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "redirection_hosts": [
             {
                 "domain_names": ["Old.Example.Com"],
@@ -151,8 +151,11 @@ def test_config_env_compliance_plugins_wrappers_and_validation(tmp_path: Path, c
     registry = PluginRegistry()
     registry.register_resource_provider("custom", object())  # type: ignore[arg-type]
     registry.register_certificate_provider("certs", object())  # type: ignore[arg-type]
+    registry.register_dns_provider("namecheap", object())  # type: ignore[arg-type]
     assert "custom" in registry.resource_providers
     assert "certs" in registry.certificate_providers
+    assert "namecheap" in registry.dns_providers
+    assert registry.to_dict()["dns_providers"] == ["namecheap"]
 
     class Client:
         def list_resource(self, kind: ResourceKind):

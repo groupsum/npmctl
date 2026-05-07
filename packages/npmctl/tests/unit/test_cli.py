@@ -21,6 +21,7 @@ def test_validate_command_text_and_json_output(desired_file: Path, capsys) -> No
     text = capsys.readouterr().out
     assert "desired state valid" in text
     assert "proxy hosts: 1" in text
+    assert "dns records: 0" in text
 
     assert main(["--output", "json", "validate", str(desired_file)]) == EXIT_OK
     payload = json.loads(capsys.readouterr().out)
@@ -28,6 +29,7 @@ def test_validate_command_text_and_json_output(desired_file: Path, capsys) -> No
     assert payload["proxy_hosts"] == 1
     assert payload["certificates"] == 1
     assert payload["access_lists"] == 1
+    assert payload["dns_records"] == 0
 
 
 def test_schema_command_outputs_capabilities_json(tmp_path: Path, capsys) -> None:
@@ -67,7 +69,7 @@ def test_bad_command_line_option_combination_is_rejected(tmp_path: Path, capsys)
 
 def test_json_error_output_shape_for_validation_errors(tmp_path: Path, capsys) -> None:
     path = tmp_path / "bad.yaml"
-    path.write_text("apiVersion: wrong\nschemaVersion: 1\n", encoding="utf-8")
+    path.write_text("apiVersion: wrong\nschemaVersion: 2\n", encoding="utf-8")
 
     assert main(["--output", "json", "validate", str(path)]) == EXIT_USAGE_OR_VALIDATION
     payload = json.loads(capsys.readouterr().err)
@@ -108,6 +110,49 @@ def test_cli_redacts_secret_in_api_errors(monkeypatch, capsys) -> None:
     err = capsys.readouterr().err
     assert "supersecret" not in err
     assert "***" in err
+
+
+def test_dns_cli_uses_discovered_provider(monkeypatch, capsys) -> None:
+    class Provider:
+        name = "namecheap"
+
+        def zones(self):
+            return ("example.com",)
+
+        def records(self, zone: str):
+            return ({"zone": zone, "name": "@", "type": "A", "value": "192.0.2.10"},)
+
+    class Registry:
+        dns_providers = {"namecheap": Provider()}
+
+        def to_dict(self):
+            return {"resource_providers": [], "certificate_providers": [], "dns_providers": ["namecheap"]}
+
+    monkeypatch.setattr("npmctl.cli.PluginRegistry.discover", lambda: Registry())
+
+    assert main(["--output", "json", "plugins", "list"]) == EXIT_OK
+    assert json.loads(capsys.readouterr().out)["plugins"]["dns_providers"] == ["namecheap"]
+
+    assert main(["--output", "json", "dns", "providers"]) == EXIT_OK
+    assert json.loads(capsys.readouterr().out)["providers"] == ["namecheap"]
+
+    assert main(["--output", "json", "dns", "doctor", "--provider", "namecheap"]) == EXIT_OK
+    assert json.loads(capsys.readouterr().out)["ok"] is True
+
+    assert main(["--output", "json", "dns", "zones", "--provider", "namecheap"]) == EXIT_OK
+    assert json.loads(capsys.readouterr().out)["zones"] == ["example.com"]
+
+    assert main(["--output", "json", "dns", "records", "--provider", "namecheap", "--zone", "example.com"]) == EXIT_OK
+    assert json.loads(capsys.readouterr().out)["records"][0]["name"] == "@"
+
+
+def test_dns_cli_rejects_unknown_provider(monkeypatch) -> None:
+    class Registry:
+        dns_providers = {}
+
+    monkeypatch.setattr("npmctl.cli.PluginRegistry.discover", lambda: Registry())
+
+    assert main(["dns", "doctor", "--provider", "missing"]) == EXIT_USAGE_OR_VALIDATION
 
 
 def test_exit_code_mapping_for_conflict_api_capability_and_migration_errors(

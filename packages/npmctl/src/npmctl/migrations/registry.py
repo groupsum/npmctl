@@ -12,7 +12,7 @@ from npmctl.errors import MigrationError
 from npmctl.loader import EXPECTED_API_VERSION, SUPPORTED_EXTENSIONS
 from npmctl.migrations.base import MigrationResult
 
-CURRENT_SCHEMA_VERSION = 1
+CURRENT_SCHEMA_VERSION = 2
 
 
 def needs_migration(document: dict[str, Any]) -> bool:
@@ -22,19 +22,20 @@ def needs_migration(document: dict[str, Any]) -> bool:
 
 
 def migrate_document(document: dict[str, Any]) -> tuple[dict[str, Any], bool, int | None]:
-    """Migrate an in-memory desired-state document to schema v1."""
+    """Migrate an in-memory desired-state document to the current schema."""
 
     if not isinstance(document, dict):
         raise MigrationError("desired-state document must be an object")
     before = document.get("schemaVersion")
     if before == CURRENT_SCHEMA_VERSION and document.get("apiVersion") == EXPECTED_API_VERSION:
         return dict(document), False, CURRENT_SCHEMA_VERSION
-    if before not in (None, 0):
+    if before not in (None, 0, 1):
         raise MigrationError(f"unsupported desired-state schemaVersion: {before}")
     migrated = dict(document)
     migrated.setdefault("proxy_hosts", [])
     migrated.setdefault("certificates", [])
     migrated.setdefault("access_lists", [])
+    migrated.setdefault("dns_records", [])
     migrated["apiVersion"] = EXPECTED_API_VERSION
     migrated["schemaVersion"] = CURRENT_SCHEMA_VERSION
     return migrated, True, before if isinstance(before, int) else None

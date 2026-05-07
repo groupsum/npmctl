@@ -58,7 +58,7 @@ Every managed resource needs npmctl ownership metadata:
 
 ```yaml
 apiVersion: npmctl.com/v1
-schemaVersion: 1
+schemaVersion: 2
 proxy_hosts:
   - domain_names: [app.example.com]
     forward_scheme: http
@@ -74,7 +74,7 @@ References use `resource_id` values:
 
 ```yaml
 apiVersion: npmctl.com/v1
-schemaVersion: 1
+schemaVersion: 2
 certificates:
   - name: wildcard-example
     domain_names: ["*.example.com", example.com]
