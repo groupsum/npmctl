@@ -30,8 +30,13 @@ jobs:
             echo "Docker Compose is not installed on this runner" >&2
             exit 1
           fi
-          docker rm -f npmctl_lander 2>/dev/null || true
-          "${compose[@]}" -f deploy/lander/compose.yml up -d --build --force-recreate lander
+          mapfile -t stale_containers < <(
+            docker ps -a --filter name=npmctl_lander --format '{{.ID}}'
+          )
+          if (( ${#stale_containers[@]} > 0 )); then
+            docker rm -f "${stale_containers[@]}"
+          fi
+          "${compose[@]}" -f deploy/lander/compose.yml up -d --build lander
 
       - name: Connect NPM to lander network
         shell: bash
