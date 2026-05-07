@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Mapping
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import requests
@@ -213,7 +213,7 @@ def _parse_iso_expiry(value: str) -> int:
     except ValueError as exc:
         raise ApiError("token response expires must be numeric or ISO-8601") from exc
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=UTC)
+        parsed = parsed.replace(tzinfo=timezone.utc)
     return int(parsed.timestamp())
 
 

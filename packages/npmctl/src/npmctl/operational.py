@@ -6,7 +6,7 @@ import hashlib
 import json
 import ast
 import os
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from importlib import metadata
 from pathlib import Path
 from typing import Any
@@ -15,7 +15,7 @@ from npmctl.planner import Plan
 
 
 def utc_now() -> str:
-    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def write_json(path: str | Path, payload: dict[str, Any]) -> Path:
