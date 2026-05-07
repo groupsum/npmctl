@@ -1,11 +1,13 @@
 ---
 name: npmctl release build
-description: Build npmctl wheel and source distribution.
+description: Build npmctl package wheels and source distributions.
 runs:
   using: composite
   steps:
     - shell: bash
-      run: uv build --package npmctl
+      run: |
+        uv build --package npmctl
+        uv build --package npmctl-namecheap
     - shell: bash
       run: |
         uv run python -m npmctl compliance artifacts --output-dir .tmp/compliance --source-dir . --dist-dir dist

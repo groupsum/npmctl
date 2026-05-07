@@ -8,6 +8,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[4]
 WORKFLOWS = ROOT / ".github" / "workflows"
+ACTIONS = ROOT / ".github" / "actions"
 
 
 def _workflow(name: str) -> dict:
@@ -49,11 +50,22 @@ def test_workflow_trigger_and_gate_semantics() -> None:
     assert "docs-ssot.yml" in release["jobs"]["gates"]["steps"][0]["run"]
     assert "python-matrix.yml" in release["jobs"]["gates"]["steps"][0]["run"]
     assert "live-npm-gate.yml" in release["jobs"]["gates"]["steps"][0]["run"]
+    bump_script = release["jobs"]["prepare"]["steps"][2]["run"]
+    commit_script = release["jobs"]["prepare"]["steps"][3]["run"]
+    assert "packages/npmctl-namecheap/pyproject.toml" in bump_script
+    assert "packages/npmctl-namecheap/pyproject.toml" in commit_script
     assert release["jobs"]["build"]["needs"] == ["prepare", "gates"]
     assert release["jobs"]["publish"]["needs"] == ["prepare", "build"]
     publish_steps = release["jobs"]["publish"]["steps"]
     pypi_step = next(step for step in publish_steps if step.get("uses", "").startswith("pypa/"))
     assert pypi_step["with"]["skip-existing"] == "true"
+
+    release_build = yaml.load(
+        (ACTIONS / "npmctl-release-build" / "action.yml").read_text(encoding="utf-8"), Loader=yaml.BaseLoader
+    )
+    build_script = release_build["runs"]["steps"][0]["run"]
+    assert "uv build --package npmctl\n" in build_script
+    assert "uv build --package npmctl-namecheap" in build_script
 
 
 def test_lander_deploy_workflow_is_dispatch_only_and_idempotent() -> None:
