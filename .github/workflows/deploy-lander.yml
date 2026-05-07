@@ -3,11 +3,6 @@ name: Deploy npmctl.com Lander
 
 on:
   workflow_dispatch:
-  push:
-    branches: [master]
-    paths:
-      - deploy/lander/**
-      - .github/workflows/deploy-lander.yml
 
 concurrency:
   group: npmctl-lander-deploy
@@ -35,6 +30,7 @@ jobs:
             echo "Docker Compose is not installed on this runner" >&2
             exit 1
           fi
+          docker rm -f npmctl_lander 2>/dev/null || true
           "${compose[@]}" -f deploy/lander/compose.yml up -d --build --force-recreate lander
 
       - name: Connect NPM to lander network
