@@ -1,7 +1,8 @@
 # npmctl
 
 [![CI](https://github.com/groupsum/npmctl/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/groupsum/npmctl/actions/workflows/ci.yml)
-[![Real NPM E2E](https://github.com/groupsum/npmctl/actions/workflows/e2e-npm.yml/badge.svg?branch=master)](https://github.com/groupsum/npmctl/actions/workflows/e2e-npm.yml)
+[![Python Matrix](https://github.com/groupsum/npmctl/actions/workflows/python-matrix.yml/badge.svg?branch=master)](https://github.com/groupsum/npmctl/actions/workflows/python-matrix.yml)
+[![Live NPM Gate](https://github.com/groupsum/npmctl/actions/workflows/live-npm-gate.yml/badge.svg?branch=master)](https://github.com/groupsum/npmctl/actions/workflows/live-npm-gate.yml)
 [![PyPI](https://img.shields.io/pypi/v/npmctl.svg)](https://pypi.org/project/npmctl/)
 
 `npmctl` is an owner-scoped GitOps controller for Nginx Proxy Manager. It validates desired-state YAML, plans safe changes against a live NPM API, applies clean plans, and adopts unmanaged resources only when explicitly requested.
@@ -32,7 +33,7 @@ certificate providers.
 
 ## Requirements
 
-- Python `3.11`, `3.12`, or `3.13`
+- Python `3.10`, `3.11`, `3.12`, or `3.13`
 - Access to a Nginx Proxy Manager API, usually `http://host:81/api`
 - NPM admin credentials or an account with permissions for the resources you want to manage
 - Optional for local development: Docker and Docker Compose

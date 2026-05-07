@@ -9,7 +9,7 @@ Generated entries: 135
 | feat:auth-token | Authenticate to NPM API | implemented | current | T2 | clm:create-only-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-client-cli |
 | feat:certificate-crud | Owner-scoped SSL certificate CRUD | implemented | current | T2 | clm:owner-scoped-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
 | feat:ci-real-npm-coverage-artifact | Real NPM coverage artifact | implemented | explicit | T2 | clm:conformance-release-blocking-live-npm, clm:expanded-feature-scope-planning | tst:conformance-release-blocking-live-npm, tst:expanded-feature-scope-planning |
-| feat:ci-real-npm-scheduled-e2e | Scheduled real NPM E2E CI | implemented | explicit | T2 | clm:conformance-release-blocking-live-npm, clm:expanded-feature-scope-planning | tst:conformance-release-blocking-live-npm, tst:expanded-feature-scope-planning |
+| feat:ci-real-npm-scheduled-e2e | Scheduled live NPM gate CI | implemented | explicit | T2 | clm:conformance-release-blocking-live-npm, clm:expanded-feature-scope-planning | tst:conformance-release-blocking-live-npm, tst:expanded-feature-scope-planning |
 | feat:cli-completion | CLI shell completions | implemented | explicit | T2 | clm:cli-operator-certification, clm:expanded-feature-scope-planning | tst:cli-operator-certification, tst:expanded-feature-scope-planning |
 | feat:cli-config-file | CLI config file | implemented | explicit | T2 | clm:cli-operator-certification, clm:expanded-feature-scope-planning | tst:cli-operator-certification, tst:expanded-feature-scope-planning |
 | feat:cli-doctor | CLI doctor diagnostics | implemented | explicit | T2 | clm:cli-operator-certification, clm:expanded-feature-scope-planning | tst:cli-operator-certification, tst:expanded-feature-scope-planning |
@@ -39,7 +39,7 @@ Generated entries: 135
 | feat:coverage-validation-module | Validation module coverage | implemented | explicit | T2 | clm:coverage-total-100-percent, clm:expanded-feature-scope-planning | tst:coverage-total-100-percent, tst:expanded-feature-scope-planning |
 | feat:create-missing-proxy-hosts | Create missing proxy hosts | implemented | current | T2 | clm:create-only-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
 | feat:dev-coverage-threshold-ratchet | Development coverage threshold ratchet | implemented | explicit | T2 | clm:coverage-total-100-percent, clm:expanded-feature-scope-planning | tst:coverage-total-100-percent, tst:expanded-feature-scope-planning |
-| feat:dev-real-e2e-coverage-measurement | Real NPM E2E coverage measurement | implemented | explicit | T2 | clm:conformance-release-blocking-live-npm, clm:expanded-feature-scope-planning | tst:conformance-release-blocking-live-npm, tst:expanded-feature-scope-planning |
+| feat:dev-real-e2e-coverage-measurement | Live NPM Gate coverage measurement | implemented | explicit | T2 | clm:conformance-release-blocking-live-npm, clm:expanded-feature-scope-planning | tst:conformance-release-blocking-live-npm, tst:expanded-feature-scope-planning |
 | feat:dev-schema-fixture-roundtrip | Schema fixture roundtrip gate | implemented | explicit | T2 | clm:development-gate-certification, clm:expanded-feature-scope-planning | tst:development-gate-certification, tst:expanded-feature-scope-planning |
 | feat:dev-type-checking | Development type checking gate | implemented | explicit | T2 | clm:development-gate-certification, clm:expanded-feature-scope-planning | tst:development-gate-certification, tst:expanded-feature-scope-planning |
 | feat:discover-proxy-hosts | Discover current proxy hosts | implemented | current | T2 | clm:create-only-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-client-cli |
@@ -96,7 +96,7 @@ Generated entries: 135
 | feat:gap-real-npm-cert-create-readback | Real NPM certificate create read-back coverage | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-real-npm-cert-create-readback |
 | feat:gap-real-npm-cert-ref-applied | Real NPM certificate ID application coverage | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-real-npm-cert-ref-applied |
 | feat:gap-real-npm-cert-update-delete-prune | Real NPM certificate update delete prune coverage | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-real-npm-cert-update-delete-prune |
-| feat:gap-real-npm-cleanup | Real NPM E2E cleanup assertions | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-real-npm-cleanup |
+| feat:gap-real-npm-cleanup | Live NPM Gate cleanup assertions | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-real-npm-cleanup |
 | feat:gap-real-npm-domain-collision | Real NPM domain collision coverage | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-real-npm-domain-collision |
 | feat:gap-real-npm-enabled-hsts | Real NPM enabled and HSTS assertions | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-real-npm-enabled-hsts |
 | feat:gap-real-npm-foreign-owner | Real NPM foreign-owner protection | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-real-npm-foreign-owner |
@@ -115,7 +115,7 @@ Generated entries: 135
 | feat:gap-real-npm-ssl-forced | Real NPM force HTTPS assertions | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-real-npm-ssl-forced |
 | feat:gap-real-npm-websockets | Real NPM WebSocket assertions | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-real-npm-websockets |
 | feat:gap-workflow-semantics | GitHub workflow semantics coverage | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-workflow-semantics |
-| feat:github-actions-gates | Gated GitHub Actions with real NPM E2E | implemented | current | T2 | clm:owner-scoped-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
+| feat:github-actions-gates | Gated GitHub Actions with live NPM gate | implemented | current | T2 | clm:owner-scoped-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
 | feat:metadata-ownership | Validate metadata ownership | implemented | current | T2 | clm:metadata-conflict-guard | tst:integration-fake-npm, tst:unit-planner, tst:unit-validation |
 | feat:ops-apply-transaction-report | Apply transaction report | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:operational-hardening-certification | tst:expanded-feature-scope-planning, tst:operational-hardening-certification |
 | feat:ops-audit-log-output | Operational audit log output | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:operational-hardening-certification | tst:expanded-feature-scope-planning, tst:operational-hardening-certification |

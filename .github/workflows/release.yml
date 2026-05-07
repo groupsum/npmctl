@@ -2,35 +2,194 @@
 name: Release
 
 on:
-  workflow_run:
-    workflows: [Real NPM E2E]
-    types: [completed]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version without the v prefix.
+        required: true
+        type: string
+      ref:
+        description: Branch, tag, or SHA to release.
+        required: false
+        default: master
+        type: string
+      publish_github_release:
+        description: Create or update the GitHub Release.
+        required: false
+        default: true
+        type: boolean
+      publish_pypi:
+        description: Publish distributions to PyPI.
+        required: false
+        default: true
+        type: boolean
 
 concurrency:
-  group: npmctl-release-${{ github.ref }}
+  group: npmctl-release-${{ inputs.version }}
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  actions: write
+  contents: write
   id-token: write
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      target_ref: ${{ steps.target.outputs.ref }}
+      target_sha: ${{ steps.final-target.outputs.sha }}
+      tag_name: ${{ steps.prepare.outputs.tag-name }}
+      release_name: ${{ steps.prepare.outputs.release-name }}
+      release_notes: ${{ steps.prepare.outputs.release-notes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - name: Resolve target ref
+        id: target
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "ref=${{ inputs.ref }}" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: cobycloud/actions/actions/version-bump@main
+        id: bump
+        with:
+          version: ${{ inputs.version }}
+          pyproject-files: |
+            pyproject.toml
+            packages/npmctl/pyproject.toml
+          extra-version-files: packages/npmctl/src/npmctl/__init__.py
+          extra-version-pattern: >-
+            (__version__\s*=\s*["']).*?(["'])
+          update-lockfiles: "false"
+
+      - uses: cobycloud/actions/actions/git-commit-generated@main
+        id: commit
+        with:
+          paths: |
+            pyproject.toml
+            packages/npmctl/pyproject.toml
+            packages/npmctl/src/npmctl/__init__.py
+          commit-message: Release npmctl ${{ inputs.version }}
+          push: "true"
+
+      - name: Refresh target SHA after release commit
+        id: final-target
+        shell: bash
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: cobycloud/actions/actions/release-prepare@main
+        id: prepare
+        with:
+          version: ${{ inputs.version }}
+          release-name: npmctl v${{ inputs.version }}
+          fallback-notes: Release npmctl v${{ inputs.version }}
+          validate-version-files: |
+            pyproject.toml
+            packages/npmctl/pyproject.toml
+            packages/npmctl/src/npmctl/__init__.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npmctl-release-notes
+          path: ${{ steps.prepare.outputs.release-notes }}
+
+  gates:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch and wait for release gates
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TARGET_REF: ${{ needs.prepare.outputs.target_ref }}
+          TARGET_SHA: ${{ needs.prepare.outputs.target_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          wait_for_success() {
+            local workflow="$1"
+            local label="$2"
+            local started="$3"
+            local deadline=$((SECONDS + 3600))
+            local run_id=""
+
+            while (( SECONDS < deadline )); do
+              run_id="$(gh run list --repo "$REPO" --workflow "$workflow" \
+                --json databaseId,headSha,status,conclusion,createdAt --limit 50 \
+                --jq '[.[] | select(.headSha == env.TARGET_SHA and .createdAt >= "'"$started"'")] | sort_by(.createdAt) | last | .databaseId // ""')"
+              if [[ -n "$run_id" ]]; then
+                status="$(gh run view "$run_id" --repo "$REPO" --json status --jq .status)"
+                conclusion="$(gh run view "$run_id" --repo "$REPO" --json conclusion --jq '.conclusion // ""')"
+                if [[ "$status" == "completed" ]]; then
+                  if [[ "$conclusion" == "success" ]]; then
+                    echo "$label succeeded: $run_id"
+                    return 0
+                  fi
+                  echo "$label failed: $run_id ($conclusion)" >&2
+                  exit 1
+                fi
+              fi
+              sleep 20
+            done
+            echo "$label did not complete before timeout" >&2
+            exit 1
+          }
+
+          ci_started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run ci.yml --repo "$REPO" --ref "$TARGET_REF"
+          wait_for_success ci.yml "CI" "$ci_started"
+
+          docs_started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run docs-ssot.yml --repo "$REPO" --ref "$TARGET_REF"
+          wait_for_success docs-ssot.yml "Docs and SSOT" "$docs_started"
+
+          python_started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run python-matrix.yml --repo "$REPO" --ref "$TARGET_REF"
+          wait_for_success python-matrix.yml "Python Matrix" "$python_started"
+
+          live_started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run live-npm-gate.yml --repo "$REPO" --ref "$TARGET_REF"
+          wait_for_success live-npm-gate.yml "Live NPM Gate" "$live_started"
+
   build:
-    if: github.event.workflow_run.conclusion == 'success'
+    needs: [prepare, gates]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.target_sha }}
       - uses: ./.github/actions/setup-uv-python
       - uses: ./.github/actions/npmctl-release-build
 
   publish:
-    if: github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'v')
-    needs: build
+    needs: [prepare, build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: npmctl-dist
           path: dist
-      - uses: astral-sh/setup-uv@v5
-      - run: uv publish
+      - uses: actions/download-artifact@v4
+        with:
+          name: npmctl-release-notes
+          path: .tmp/release
+
+      - uses: cobycloud/actions/actions/github-release@main
+        if: inputs.publish_github_release
+        with:
+          tag-name: ${{ needs.prepare.outputs.tag_name }}
+          name: ${{ needs.prepare.outputs.release_name }}
+          body-path: .tmp/release/release-notes.md
+          files: dist/*
+
+      - uses: cobycloud/actions/actions/pypi-publish@main
+        if: inputs.publish_pypi
+        with:
+          packages-dir: dist

@@ -21,7 +21,7 @@ Use npmctl when multiple workloads or teams need to create Nginx Proxy Manager p
 ## Semantic entity summary
 
 - Software application: npmctl
-- Runtime: Python 3.11+
+- Runtime: Python 3.10+
 - Primary integration: Nginx Proxy Manager API
 - Infrastructure pattern: Docker, GitHub Actions, GitOps, reverse proxy automation
 - Safety invariant: create-only reconciliation with metadata ownership guards

@@ -1,16 +1,13 @@
 ---
-name: Real NPM E2E
+name: Live NPM Gate
 
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
   workflow_dispatch:
   schedule:
     - cron: "23 4 * * *"
 
 concurrency:
-  group: npmctl-real-npm-e2e-${{ github.ref }}
+  group: npmctl-live-npm-gate-${{ github.ref }}
   cancel-in-progress: false
 
 permissions:
@@ -19,7 +16,6 @@ permissions:
 
 jobs:
   e2e:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

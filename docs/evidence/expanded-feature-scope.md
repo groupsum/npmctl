@@ -16,7 +16,7 @@ real-NPM CI coverage artifact wiring, and a raised coverage threshold.
 Verification:
 
 - `packages/npmctl/tests/unit/test_expanded_features.py`
-- `.github/workflows/e2e-npm.yml`
+- `.github/workflows/live-npm-gate.yml`
 - `.github/actions/npmctl-real-npm-e2e/action.yml`
 - `schemas/npmctl/desired-state.v1.schema.json`
 - `schemas/npmctl/plan-output.v1.schema.json`

@@ -15,24 +15,33 @@ def _workflow(name: str) -> dict:
 
 def test_workflow_trigger_and_gate_semantics() -> None:
     ci = _workflow("ci.yml")
-    e2e = _workflow("e2e-npm.yml")
+    matrix = _workflow("python-matrix.yml")
+    live_npm = _workflow("live-npm-gate.yml")
     docs = _workflow("docs-ssot.yml")
     release = _workflow("release.yml")
 
     assert ci["on"]["push"]["branches"] == ["master"]
     assert "workflow_dispatch" in ci["on"]
 
-    assert e2e["on"]["workflow_run"]["workflows"] == ["CI"]
-    assert e2e["on"]["workflow_run"]["types"] == ["completed"]
-    assert "workflow_run.conclusion == 'success'" in e2e["jobs"]["e2e"]["if"]
+    assert matrix["on"]["push"]["branches"] == ["master", "v*"]
+    assert "workflow_dispatch" in matrix["on"]
+    assert matrix["jobs"]["python-matrix"]["with"]["python-versions"] == '["3.10","3.11","3.12","3.13"]'
+
+    assert live_npm["name"] == "Live NPM Gate"
+    assert "workflow_dispatch" in live_npm["on"]
+    assert "workflow_run" not in live_npm["on"]
 
     assert docs["on"]["workflow_run"]["workflows"] == ["CI"]
     assert docs["on"]["workflow_run"]["types"] == ["completed"]
     assert "workflow_run.conclusion == 'success'" in docs["jobs"]["docs-ssot"]["if"]
 
-    assert release["on"]["workflow_run"]["workflows"] == ["Real NPM E2E"]
-    assert release["on"]["workflow_run"]["types"] == ["completed"]
-    assert "workflow_dispatch" not in release["on"]
-    assert "workflow_run.conclusion == 'success'" in release["jobs"]["build"]["if"]
-    assert release["jobs"]["publish"]["needs"] == "build"
-    assert "startsWith(github.event.workflow_run.head_branch, 'v')" in release["jobs"]["publish"]["if"]
+    dispatch_inputs = release["on"]["workflow_dispatch"]["inputs"]
+    assert dispatch_inputs["publish_github_release"]["type"] == "boolean"
+    assert dispatch_inputs["publish_pypi"]["type"] == "boolean"
+    assert "workflow_run" not in release["on"]
+    assert "ci.yml" in release["jobs"]["gates"]["steps"][0]["run"]
+    assert "docs-ssot.yml" in release["jobs"]["gates"]["steps"][0]["run"]
+    assert "python-matrix.yml" in release["jobs"]["gates"]["steps"][0]["run"]
+    assert "live-npm-gate.yml" in release["jobs"]["gates"]["steps"][0]["run"]
+    assert release["jobs"]["build"]["needs"] == ["prepare", "gates"]
+    assert release["jobs"]["publish"]["needs"] == ["prepare", "build"]

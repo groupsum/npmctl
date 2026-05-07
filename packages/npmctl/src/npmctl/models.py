@@ -6,13 +6,18 @@ import ipaddress
 import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
-from enum import StrEnum
+from enum import Enum
 from typing import Any, ClassVar
 
 from npmctl.errors import ValidationError
 from npmctl.metadata import ManagedIdentity, identity_from_meta, validate_metadata
 
 ResourceId = int | str
+
+
+class StrEnum(str, Enum):
+    """Python 3.10-compatible subset of enum.StrEnum."""
+
 
 _DOMAIN_LABEL_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
 _FORWARD_HOST_PATTERN = re.compile(r"^[A-Za-z0-9_.:-]+$")

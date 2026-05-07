@@ -1,0 +1,26 @@
+---
+name: Python Matrix
+
+on:
+  push:
+    branches: [master, "v*"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: npmctl-python-matrix-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  python-matrix:
+    uses: cobycloud/actions/.github/workflows/reusable-python-package-matrix-ci.yml@main
+    with:
+      python-versions: '["3.10","3.11","3.12","3.13"]'
+      package-cells: '[{"name":"npmctl","path":"."}]'
+      install-command: uv sync --all-packages --dev --frozen
+      compile-command: uv run python -m compileall -q packages/npmctl/src
+      test-command: uv run pytest
+      fail-fast: false
