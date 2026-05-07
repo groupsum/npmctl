@@ -87,8 +87,8 @@ class NpmClient:
         redirection_hosts = self.list_resource(ResourceKind.REDIRECTION_HOST) if caps.redirection_hosts.list else ()
         dead_hosts = self.list_resource(ResourceKind.DEAD_HOST) if caps.dead_hosts.list else ()
         streams = self.list_resource(ResourceKind.STREAM) if caps.streams.list else ()
-        users = self.list_resource(ResourceKind.USER) if caps.users.list else ()
-        settings = self.list_resource(ResourceKind.SETTING) if caps.settings.list else ()
+        users = self._optional_list_resource(ResourceKind.USER) if caps.users.list else ()
+        settings = self._optional_list_resource(ResourceKind.SETTING) if caps.settings.list else ()
         return ExistingState(
             proxy_hosts=proxy_hosts,
             certificates=certificates,
@@ -99,6 +99,14 @@ class NpmClient:
             users=users,
             settings=settings,
         )
+
+    def _optional_list_resource(self, kind: ResourceKind) -> tuple[ExistingResource, ...]:
+        try:
+            return self.list_resource(kind)
+        except ApiError as exc:
+            if "HTTP 403" in str(exc):
+                return ()
+            raise
 
     def create_resource(self, kind: ResourceKind, payload: Mapping[str, Any]) -> ExistingResource:
         contract = CONTRACTS[kind]

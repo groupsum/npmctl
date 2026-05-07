@@ -154,6 +154,29 @@ def test_settings_accept_string_ids_from_real_npm() -> None:
     assert session.calls[2]["url"].endswith("/settings/default-site")
 
 
+def test_optional_resource_discovery_tolerates_permission_denied(monkeypatch) -> None:
+    client, _ = _client([])
+
+    def deny(_: ResourceKind) -> None:
+        raise ApiError('GET /users failed: HTTP 403: {"error":"Permission Denied"}')
+
+    monkeypatch.setattr(client, "list_resource", deny)
+
+    assert client._optional_list_resource(ResourceKind.USER) == ()
+
+
+def test_optional_resource_discovery_reraises_non_permission_errors(monkeypatch) -> None:
+    client, _ = _client([])
+
+    def fail(_: ResourceKind) -> None:
+        raise ApiError("GET /users failed: HTTP 500: broken")
+
+    monkeypatch.setattr(client, "list_resource", fail)
+
+    with pytest.raises(ApiError, match="HTTP 500"):
+        client._optional_list_resource(ResourceKind.USER)
+
+
 def test_api_errors_redact_configured_secrets_and_sensitive_markers() -> None:
     client, _ = _client(
         [
