@@ -50,3 +50,6 @@ def test_workflow_trigger_and_gate_semantics() -> None:
     assert "live-npm-gate.yml" in release["jobs"]["gates"]["steps"][0]["run"]
     assert release["jobs"]["build"]["needs"] == ["prepare", "gates"]
     assert release["jobs"]["publish"]["needs"] == ["prepare", "build"]
+    publish_steps = release["jobs"]["publish"]["steps"]
+    pypi_step = next(step for step in publish_steps if step.get("uses", "").startswith("pypa/"))
+    assert pypi_step["with"]["skip-existing"] == "true"

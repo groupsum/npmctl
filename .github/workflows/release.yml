@@ -224,3 +224,4 @@ jobs:
         if: inputs.publish_pypi
         with:
           packages-dir: dist
+          skip-existing: true
