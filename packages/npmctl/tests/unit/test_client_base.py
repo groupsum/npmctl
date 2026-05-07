@@ -9,6 +9,7 @@ from npmctl.client import NpmClient
 from npmctl.client.base import _extract_token
 from npmctl.errors import ApiError
 from npmctl.models import ResourceKind
+from npmctl.schema import Capabilities, ResourceCapabilities
 
 
 class FakeResponse:
@@ -175,6 +176,58 @@ def test_optional_resource_discovery_reraises_non_permission_errors(monkeypatch)
 
     with pytest.raises(ApiError, match="HTTP 500"):
         client._optional_list_resource(ResourceKind.USER)
+
+
+def test_existing_state_tolerates_optional_permission_denied(monkeypatch) -> None:
+    client, session = _client(
+        [
+            FakeResponse(200, []),
+            FakeResponse(200, []),
+            FakeResponse(200, []),
+            FakeResponse(403, text='{"error":"Permission Denied"}'),
+            FakeResponse(403, text='{"error":"Permission Denied"}'),
+        ]
+    )
+    client._token = "token-value"
+    client._expires = int(time.time()) + 3600
+    caps = Capabilities(
+        proxy_hosts=ResourceCapabilities(list=True),
+        certificates=ResourceCapabilities(list=True),
+        access_lists=ResourceCapabilities(list=True),
+        users=ResourceCapabilities(list=True),
+        settings=ResourceCapabilities(list=True),
+    )
+    monkeypatch.setattr(client, "capabilities", lambda: caps)
+
+    state = client.existing_state()
+
+    assert state.proxy_hosts == ()
+    assert state.certificates == ()
+    assert state.access_lists == ()
+    assert state.users == ()
+    assert state.settings == ()
+    assert [call["url"] for call in session.calls] == [
+        "http://npm.test/api/nginx/proxy-hosts",
+        "http://npm.test/api/nginx/certificates",
+        "http://npm.test/api/nginx/access-lists",
+        "http://npm.test/api/users",
+        "http://npm.test/api/settings",
+    ]
+
+
+def test_existing_state_still_fails_on_required_permission_denied(monkeypatch) -> None:
+    client, _ = _client([FakeResponse(403, text='{"error":"Permission Denied"}')])
+    client._token = "token-value"
+    client._expires = int(time.time()) + 3600
+    caps = Capabilities(
+        proxy_hosts=ResourceCapabilities(list=True),
+        certificates=ResourceCapabilities(list=True),
+        access_lists=ResourceCapabilities(list=True),
+    )
+    monkeypatch.setattr(client, "capabilities", lambda: caps)
+
+    with pytest.raises(ApiError, match="GET /nginx/proxy-hosts failed: HTTP 403"):
+        client.existing_state()
 
 
 def test_api_errors_redact_configured_secrets_and_sensitive_markers() -> None:

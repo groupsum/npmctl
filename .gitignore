@@ -13,5 +13,6 @@ htmlcov/
 .env
 .env.*
 !.env.example
+*.tmp*
 .ssh/
 .DS_Store
