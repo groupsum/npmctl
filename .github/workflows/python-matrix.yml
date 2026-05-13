@@ -28,5 +28,16 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv run python -m compileall -q packages/npmctl/src
+      - run: uv run python -m compileall -q packages/npmctl-cloudflare/src
+      - run: uv run python -m compileall -q packages/npmctl-digitalocean/src
+      - run: uv run python -m compileall -q packages/npmctl-godaddy/src
       - run: uv run python -m compileall -q packages/npmctl-namecheap/src
-      - run: uv run pytest packages/npmctl/tests packages/npmctl-namecheap/tests
+      - run: uv run python -m compileall -q packages/npmctl-route53/src
+      - run: >
+          uv run pytest
+          packages/npmctl/tests
+          packages/npmctl-cloudflare/tests
+          packages/npmctl-digitalocean/tests
+          packages/npmctl-godaddy/tests
+          packages/npmctl-namecheap/tests
+          packages/npmctl-route53/tests

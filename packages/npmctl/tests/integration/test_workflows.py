@@ -53,10 +53,19 @@ def test_workflow_trigger_and_gate_semantics() -> None:
     assert "live-npm-gate.yml" in release["jobs"]["gates"]["steps"][0]["run"]
     bump_script = release["jobs"]["prepare"]["steps"][2]["run"]
     commit_script = release["jobs"]["prepare"]["steps"][3]["run"]
-    assert "packages/npmctl-namecheap/pyproject.toml" in bump_script
-    assert "packages/npmctl-namecheap/pyproject.toml" in commit_script
+    provider_pyprojects = [
+        "packages/npmctl-cloudflare/pyproject.toml",
+        "packages/npmctl-digitalocean/pyproject.toml",
+        "packages/npmctl-godaddy/pyproject.toml",
+        "packages/npmctl-namecheap/pyproject.toml",
+        "packages/npmctl-route53/pyproject.toml",
+    ]
+    for pyproject in provider_pyprojects:
+        assert pyproject in bump_script
+        assert pyproject in commit_script
     assert release["jobs"]["build"]["needs"] == ["prepare", "gates"]
     assert release["jobs"]["publish"]["needs"] == ["prepare", "build"]
+    assert release["jobs"]["publish"]["environment"] == "pypi"
     publish_steps = release["jobs"]["publish"]["steps"]
     pypi_step = next(step for step in publish_steps if step.get("uses", "").startswith("pypa/"))
     assert pypi_step["with"]["skip-existing"] == "true"
@@ -66,7 +75,14 @@ def test_workflow_trigger_and_gate_semantics() -> None:
     )
     build_script = release_build["runs"]["steps"][0]["run"]
     assert "uv build --package npmctl\n" in build_script
-    assert "uv build --package npmctl-namecheap" in build_script
+    for package in [
+        "npmctl-cloudflare",
+        "npmctl-digitalocean",
+        "npmctl-godaddy",
+        "npmctl-namecheap",
+        "npmctl-route53",
+    ]:
+        assert f"uv build --package {package}" in build_script
 
 
 def test_lander_deploy_workflow_is_dispatch_only_and_idempotent() -> None:

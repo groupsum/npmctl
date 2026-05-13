@@ -7,7 +7,11 @@ runs:
     - shell: bash
       run: |
         uv build --package npmctl
+        uv build --package npmctl-cloudflare
+        uv build --package npmctl-digitalocean
+        uv build --package npmctl-godaddy
         uv build --package npmctl-namecheap
+        uv build --package npmctl-route53
     - shell: bash
       run: |
         uv run python -m npmctl compliance artifacts --output-dir .tmp/compliance --source-dir . --dist-dir dist
