@@ -11,7 +11,14 @@ license-files = ["LICENSE"]
 package = false
 
 [tool.uv.workspace]
-members = ["packages/npmctl", "packages/npmctl-namecheap"]
+members = [
+  "packages/npmctl",
+  "packages/npmctl-cloudflare",
+  "packages/npmctl-digitalocean",
+  "packages/npmctl-godaddy",
+  "packages/npmctl-namecheap",
+  "packages/npmctl-route53",
+]
 
 [dependency-groups]
 dev = [
@@ -30,7 +37,22 @@ dev = [
 [tool.ruff]
 line-length = 120
 target-version = "py310"
-src = ["packages/npmctl/src", "packages/npmctl/tests", "scripts", "tools"]
+src = [
+  "packages/npmctl/src",
+  "packages/npmctl/tests",
+  "packages/npmctl-cloudflare/src",
+  "packages/npmctl-cloudflare/tests",
+  "packages/npmctl-digitalocean/src",
+  "packages/npmctl-digitalocean/tests",
+  "packages/npmctl-godaddy/src",
+  "packages/npmctl-godaddy/tests",
+  "packages/npmctl-namecheap/src",
+  "packages/npmctl-namecheap/tests",
+  "packages/npmctl-route53/src",
+  "packages/npmctl-route53/tests",
+  "scripts",
+  "tools",
+]
 
 [tool.ruff.lint]
 select = ["B", "C4", "E", "F", "I", "PT", "PTH", "RUF", "SIM", "UP", "W"]
@@ -46,7 +68,14 @@ line-ending = "lf"
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers --strict-config --cov=npmctl --cov-report=term-missing"
-testpaths = ["packages/npmctl/tests", "packages/npmctl-namecheap/tests"]
+testpaths = [
+  "packages/npmctl/tests",
+  "packages/npmctl-cloudflare/tests",
+  "packages/npmctl-digitalocean/tests",
+  "packages/npmctl-godaddy/tests",
+  "packages/npmctl-namecheap/tests",
+  "packages/npmctl-route53/tests",
+]
 pythonpath = ["packages/npmctl/src"]
 markers = [
   "integration: integration tests using a local fake NPM API server",

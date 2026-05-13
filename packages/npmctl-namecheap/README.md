@@ -18,6 +18,10 @@
   <a href="https://pepy.tech/projects/npmctl-namecheap"><img src="https://static.pepy.tech/badge/npmctl-namecheap" alt="npmctl-namecheap downloads"></a>
 </p>
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/groupsum/npmctl/master/docs/images/marketing/npmctl-architecture-infographic.png" alt="npmctl architecture infographic">
+</p>
+
 `npmctl-namecheap` is the Namecheap DNS provider package for `npmctl`. Install it when you want desired-state DNS records or DNS diagnostics to resolve through Namecheap instead of using only the base `npmctl` package.
 
 ## Supported Python Versions

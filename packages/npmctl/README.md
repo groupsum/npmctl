@@ -19,6 +19,10 @@
   <a href="https://pepy.tech/projects/npmctl"><img src="https://static.pepy.tech/badge/npmctl" alt="npmctl downloads"></a>
 </p>
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/groupsum/npmctl/master/docs/images/marketing/npmctl-architecture-infographic.png" alt="npmctl architecture infographic">
+</p>
+
 `npmctl` is the Python package and console script for declarative, owner-scoped Nginx Proxy Manager automation. It manages proxy hosts, certificates, access lists, redirection hosts, dead hosts, streams, users, settings, and provider-backed DNS records without silently mutating foreign-owned resources.
 
 ## Supported Python Versions

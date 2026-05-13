@@ -21,6 +21,10 @@
   <a href="https://pepy.tech/projects/npmctl-namecheap"><img src="https://static.pepy.tech/badge/npmctl-namecheap" alt="npmctl-namecheap downloads"></a>
 </p>
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/groupsum/npmctl/master/docs/images/marketing/npmctl-architecture-infographic.png" alt="npmctl architecture infographic">
+</p>
+
 `npmctl` is an owner-scoped GitOps controller for Nginx Proxy Manager. It validates desired-state YAML, plans safe changes against a live NPM API, applies clean plans, and adopts unmanaged resources only when explicitly requested.
 
 ## FAQ
