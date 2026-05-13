@@ -67,8 +67,15 @@ def test_workflow_trigger_and_gate_semantics() -> None:
     assert release["jobs"]["publish"]["needs"] == ["prepare", "build"]
     assert release["jobs"]["publish"]["environment"] == "pypi"
     publish_steps = release["jobs"]["publish"]["steps"]
-    pypi_step = next(step for step in publish_steps if step.get("uses", "").startswith("pypa/"))
-    assert pypi_step["with"]["skip-existing"] == "true"
+    pypi_steps = [step for step in publish_steps if step.get("uses", "").startswith("pypa/")]
+    assert len(pypi_steps) == 2
+    trusted_publishing_step, token_fallback_step = pypi_steps
+    assert trusted_publishing_step["id"] == "pypi-trusted-publishing"
+    assert trusted_publishing_step["continue-on-error"] == "true"
+    assert trusted_publishing_step["with"]["skip-existing"] == "true"
+    assert "steps.pypi-trusted-publishing.outcome == 'failure'" in token_fallback_step["if"]
+    assert token_fallback_step["with"]["password"] == "${{ secrets.PYPI_API_TOKEN }}"
+    assert token_fallback_step["with"]["skip-existing"] == "true"
 
     release_build = yaml.load(
         (ACTIONS / "npmctl-release-build" / "action.yml").read_text(encoding="utf-8"), Loader=yaml.BaseLoader

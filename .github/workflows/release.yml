@@ -231,8 +231,20 @@ jobs:
           body_path: .tmp/release/release-notes.md
           files: dist/*
 
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish distributions to PyPI with Trusted Publishing
+        id: pypi-trusted-publishing
+        uses: pypa/gh-action-pypi-publish@release/v1
         if: inputs.publish_pypi
+        continue-on-error: true
         with:
+          packages-dir: dist
+          skip-existing: true
+
+      - name: Publish distributions to PyPI with API token fallback
+        if: inputs.publish_pypi && steps.pypi-trusted-publishing.outcome == 'failure'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
           packages-dir: dist
           skip-existing: true
