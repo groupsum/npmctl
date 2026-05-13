@@ -1,0 +1,20 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1004"
+number: 1004
+slug: "certificate-issuance-safety-and-error-classification"
+title: "Certificate issuance safety and error classification"
+status: "draft"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Spec: npmctl shall deduplicate repeated issuance attempts for the same normalized certificate scope, apply cooldown behavior after failed issuance, and emit structured certificate failure classes suitable for operator workflows and automation."
+supersedes: []
+superseded_by: []
+status_notes: []
+references: []
+body: |-
+  Spec: npmctl shall deduplicate repeated issuance attempts for the same normalized certificate scope, apply cooldown behavior after failed issuance, and emit structured certificate failure classes suitable for operator workflows and automation.
+spec_kind: "operational"
+adr_ids:
+  - "adr:1002"

@@ -1,0 +1,20 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1003"
+number: 1003
+slug: "certificate-reconciliation-policy"
+title: "Certificate reconciliation policy"
+status: "draft"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Spec: npmctl shall expose explicit certificate reconciliation policy modes for reuse, create, and rotate behavior; shall prefer compatible certificate reuse during repair; and shall fail closed when certificate actions are disallowed by the selected policy."
+supersedes: []
+superseded_by: []
+status_notes: []
+references: []
+body: |-
+  Spec: npmctl shall expose explicit certificate reconciliation policy modes for reuse, create, and rotate behavior; shall prefer compatible certificate reuse during repair; and shall fail closed when certificate actions are disallowed by the selected policy.
+spec_kind: "normative"
+adr_ids:
+  - "adr:1002"

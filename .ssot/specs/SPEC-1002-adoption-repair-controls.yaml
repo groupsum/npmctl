@@ -1,0 +1,20 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1002"
+number: 1002
+slug: "adoption-repair-controls"
+title: "Adoption repair controls"
+status: "draft"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Spec: npmctl shall support repair-safe adoption controls that separate metadata attachment from broader reconciliation, allow resource-family scoping for repair operations, and distinguish adoptable compatible unmanaged resources from unmanaged conflicts."
+supersedes: []
+superseded_by: []
+status_notes: []
+references: []
+body: |-
+  Spec: npmctl shall support repair-safe adoption controls that separate metadata attachment from broader reconciliation, allow resource-family scoping for repair operations, and distinguish adoptable compatible unmanaged resources from unmanaged conflicts.
+spec_kind: "normative"
+adr_ids:
+  - "adr:1002"

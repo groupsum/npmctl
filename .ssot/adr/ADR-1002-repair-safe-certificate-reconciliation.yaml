@@ -1,0 +1,17 @@
+schema_version: "0.2.0"
+kind: "adr"
+id: "adr:1002"
+number: 1002
+slug: "repair-safe-certificate-reconciliation"
+title: "Repair-safe certificate reconciliation"
+status: "draft"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Decision: certificate issuance and rotation are higher-risk mutations than proxy-host ownership adoption or proxy-host drift repair. During outage or repair workflows, npmctl shall default to conservative certificate behavior, prefer compatible certificate reuse, allow metadata-only adoption, and require explicit operator intent for certificate creation or rotation."
+supersedes: []
+superseded_by: []
+status_notes: []
+references: []
+body: |-
+  Decision: certificate issuance and rotation are higher-risk mutations than proxy-host ownership adoption or proxy-host drift repair. During outage or repair workflows, npmctl shall default to conservative certificate behavior, prefer compatible certificate reuse, allow metadata-only adoption, and require explicit operator intent for certificate creation or rotation.
