@@ -4,6 +4,7 @@ from npmctl.loader import load_desired_state
 from npmctl.models import (
     DesiredAccessList,
     DesiredCertificate,
+    DesiredGenericResource,
     DesiredProxyHost,
     DesiredState,
     ExistingResource,
@@ -139,7 +140,7 @@ def test_plan_conflicts_on_unmanaged_without_adopt(desired_file) -> None:
     existing = ExistingState(proxy_hosts=(_existing_proxy(meta={}),))
     plan = compute_plan(desired=desired, existing=existing, capabilities=Capabilities.full_for_tests())
     assert not plan.ok
-    assert plan.conflicts[0].code == "unmanaged_resource"
+    assert plan.conflicts[0].code == "adoptable_compatible_unmanaged"
 
 
 def test_plan_adopts_unmanaged_when_explicit(desired_file) -> None:
@@ -153,6 +154,63 @@ def test_plan_adopts_unmanaged_when_explicit(desired_file) -> None:
     )
     assert plan.ok
     assert any(op.action == "adopt" for op in plan.operations)
+
+
+def test_plan_reports_compatible_unmanaged_resources_as_adoptable(desired_file) -> None:
+    desired = load_desired_state(desired_file)
+    existing = ExistingState(proxy_hosts=(_existing_proxy(meta={}),))
+
+    plan = compute_plan(desired=desired, existing=existing, capabilities=Capabilities.full_for_tests())
+
+    assert not plan.ok
+    assert plan.conflicts[0].code == "adoptable_compatible_unmanaged"
+
+
+def test_plan_metadata_only_adopt_skips_missing_adjacent_resources(desired_file) -> None:
+    desired = load_desired_state(desired_file)
+    existing = ExistingState(proxy_hosts=(_existing_proxy(meta={}),))
+
+    plan = compute_plan(
+        desired=desired,
+        existing=existing,
+        capabilities=Capabilities.full_for_tests(),
+        options=PlannerOptions(
+            adopt=True,
+            metadata_only_adopt=True,
+            resource_kinds=frozenset({ResourceKind.PROXY_HOST, ResourceKind.CERTIFICATE, ResourceKind.ACCESS_LIST}),
+        ),
+    )
+
+    assert plan.ok
+    assert any(op.action == "adopt" and op.kind == ResourceKind.PROXY_HOST for op in plan.operations)
+    assert all(
+        not (op.action == "create" and op.kind in {ResourceKind.CERTIFICATE, ResourceKind.ACCESS_LIST})
+        for op in plan.operations
+    )
+
+
+def test_plan_metadata_only_adopt_leaves_managed_resources_unchanged(desired_file) -> None:
+    desired = load_desired_state(desired_file)
+    existing = ExistingState(
+        proxy_hosts=(_existing_proxy(forward_port=8080),),
+        certificates=(_existing_certificate(),),
+        access_lists=(_existing_access_list(),),
+    )
+
+    plan = compute_plan(
+        desired=desired,
+        existing=existing,
+        capabilities=Capabilities.full_for_tests(),
+        options=PlannerOptions(adopt=True, metadata_only_adopt=True),
+    )
+
+    assert plan.ok
+    assert any(
+        op.action == "noop"
+        and op.kind == ResourceKind.PROXY_HOST
+        and op.reason == "metadata-only adopt leaves managed resource unchanged"
+        for op in plan.operations
+    )
 
 
 def test_plan_prunes_owned_absent_resources(desired_file) -> None:
@@ -316,6 +374,173 @@ def test_plan_detects_certificate_and_access_list_identity_drift_and_foreign_own
     assert any(
         conflict.code == "foreign_owner" and conflict.kind == ResourceKind.ACCESS_LIST for conflict in plan.conflicts
     )
+
+
+def test_plan_reuses_compatible_existing_certificate_in_reuse_mode() -> None:
+    desired = DesiredState(
+        certificates=(
+            DesiredCertificate.from_mapping(
+                {
+                    "name": "desired-cert",
+                    "domain_names": ["example.com"],
+                    "certificate_type": "letsencrypt",
+                    "meta": {"managed_by": "npmctl", "owner": "workload-a", "resource_id": "cert.desired"},
+                },
+                path="cert",
+            ),
+        )
+    )
+    existing = ExistingState(certificates=(_existing_certificate(name="legacy-cert", domain_names=["example.com"]),))
+
+    plan = compute_plan(
+        desired=desired,
+        existing=existing,
+        capabilities=Capabilities.full_for_tests(),
+        options=PlannerOptions(certificate_mode="reuse"),
+    )
+
+    assert plan.ok
+    assert any(
+        op.action == "noop" and op.kind == ResourceKind.CERTIFICATE and op.reason == "reuse compatible certificate"
+        for op in plan.operations
+    )
+
+
+def test_plan_conflicts_when_reuse_mode_has_no_compatible_certificate() -> None:
+    desired = DesiredState(
+        certificates=(
+            DesiredCertificate.from_mapping(
+                {
+                    "name": "desired-cert",
+                    "domain_names": ["missing.example.com"],
+                    "certificate_type": "letsencrypt",
+                    "meta": {"managed_by": "npmctl", "owner": "workload-a", "resource_id": "cert.desired"},
+                },
+                path="cert",
+            ),
+        )
+    )
+
+    plan = compute_plan(
+        desired=desired,
+        existing=ExistingState(),
+        capabilities=Capabilities.full_for_tests(),
+        options=PlannerOptions(certificate_mode="reuse"),
+    )
+
+    assert not plan.ok
+    assert plan.conflicts[0].code == "certificate_reuse_required"
+
+
+def test_plan_rotate_mode_prefers_create_over_reuse() -> None:
+    desired = DesiredState(
+        certificates=(
+            DesiredCertificate.from_mapping(
+                {
+                    "name": "desired-cert",
+                    "domain_names": ["example.com"],
+                    "certificate_type": "letsencrypt",
+                    "meta": {"managed_by": "npmctl", "owner": "workload-a", "resource_id": "cert.desired"},
+                },
+                path="cert",
+            ),
+        )
+    )
+    existing = ExistingState(certificates=(_existing_certificate(name="legacy-cert", domain_names=["example.com"]),))
+
+    plan = compute_plan(
+        desired=desired,
+        existing=existing,
+        capabilities=Capabilities.full_for_tests(),
+        options=PlannerOptions(certificate_mode="rotate"),
+    )
+
+    assert plan.ok
+    assert any(op.action == "create" and op.kind == ResourceKind.CERTIFICATE for op in plan.operations)
+
+
+def test_plan_reuse_mode_blocks_owned_certificate_updates() -> None:
+    desired = DesiredState(
+        certificates=(
+            DesiredCertificate.from_mapping(
+                {
+                    "name": "wildcard-example",
+                    "domain_names": ["*.example.com", "example.com", "new.example.com"],
+                    "certificate_type": "letsencrypt",
+                    "meta": {"managed_by": "npmctl", "owner": "workload-a", "resource_id": "cert.wildcard-example"},
+                },
+                path="cert",
+            ),
+        )
+    )
+
+    plan = compute_plan(
+        desired=desired,
+        existing=ExistingState(certificates=(_existing_certificate(),)),
+        capabilities=Capabilities.full_for_tests(),
+        options=PlannerOptions(certificate_mode="reuse"),
+    )
+
+    assert not plan.ok
+    assert plan.conflicts[0].code == "certificate_update_blocked_by_policy"
+
+
+def test_plan_resource_scope_filters_prune_targets(desired_file) -> None:
+    desired = load_desired_state(desired_file)
+    existing = ExistingState(
+        proxy_hosts=(
+            _existing_proxy(
+                domain_names=["old.example.com"],
+                meta={"managed_by": "npmctl", "owner": "workload-a", "resource_id": "proxy.old"},
+            ),
+        ),
+        certificates=(
+            _existing_certificate(
+                id=21,
+                name="old-cert",
+                meta={"managed_by": "npmctl", "owner": "workload-a", "resource_id": "cert.old"},
+            ),
+        ),
+    )
+
+    plan = compute_plan(
+        desired=desired,
+        existing=existing,
+        capabilities=Capabilities.full_for_tests(),
+        options=PlannerOptions(prune_owned=True, resource_kinds=frozenset({ResourceKind.PROXY_HOST})),
+    )
+
+    assert [operation.kind for operation in plan.by_action("delete")] == [ResourceKind.PROXY_HOST]
+
+
+def test_plan_metadata_only_adopt_requires_update_capability() -> None:
+    desired = DesiredState(
+        streams=(
+            DesiredGenericResource.from_mapping(
+                ResourceKind.STREAM,
+                {
+                    "incoming_port": 8443,
+                    "forward_host": "svc",
+                    "forward_port": 9443,
+                    "meta": {"managed_by": "npmctl", "owner": "workload-a", "resource_id": "stream.one"},
+                },
+                path="stream",
+            ),
+        )
+    )
+    existing = ExistingState(
+        streams=(ExistingResource.from_generic(ResourceKind.STREAM, {"id": 7, "incoming_port": 8443}),)
+    )
+
+    plan = compute_plan(
+        desired=desired,
+        existing=existing,
+        capabilities=Capabilities.empty(),
+        options=PlannerOptions(adopt=True, metadata_only_adopt=True, allow_field_drift=True),
+    )
+
+    assert not plan.ok
+    assert plan.conflicts[0].code == "missing_update_capability"
 
 
 def test_plan_checks_partial_capabilities_by_resource_type() -> None:

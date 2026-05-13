@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 from npmctl.models import (
     DesiredProxyHost,
     DesiredResource,
+    DesiredCertificate,
     DesiredState,
     ExistingResource,
     ExistingState,
@@ -42,6 +43,9 @@ class PlannerOptions:
     adopt: bool = False
     strict_adopt: bool = True
     allow_field_drift: bool = False
+    metadata_only_adopt: bool = False
+    resource_kinds: frozenset[ResourceKind] | None = None
+    certificate_mode: Literal["reuse", "create", "rotate"] = "create"
 
 
 @dataclass(frozen=True, slots=True)
@@ -150,12 +154,13 @@ def compute_plan(
     all_existing = existing.resources()
 
     _detect_existing_integrity_conflicts(existing, conflicts)
-    desired_resources = desired.resources()
+    desired_resources = tuple(resource for resource in desired.resources() if _resource_selected(resource.kind, opts))
     desired_by_identity = {(res.kind, res.identity.owner, res.identity.resource_id): res for res in desired_resources}
 
     existing_by_identity: dict[tuple[ResourceKind, str, str], ExistingResource] = {}
     existing_by_key: dict[tuple[ResourceKind, Any], ExistingResource] = {}
     domain_index: dict[str, ExistingResource] = {}
+    compatible_certificates: dict[tuple[str, tuple[str, ...]], list[ExistingResource]] = {}
     for item in all_existing:
         existing_by_key[(item.kind, item.natural_key)] = item
         if item.identity is not None:
@@ -163,6 +168,8 @@ def compute_plan(
         if item.kind == ResourceKind.PROXY_HOST:
             for domain in item.domain_names:
                 domain_index[domain] = item
+        if item.kind == ResourceKind.CERTIFICATE:
+            compatible_certificates.setdefault(_certificate_match_key(item), []).append(item)
 
     for resource in desired_resources:
         identity = resource.identity
@@ -198,6 +205,43 @@ def compute_plan(
 
         existing_same_key = existing_by_key.get(natural_key)
         if existing_same_key is None:
+            if isinstance(resource, DesiredCertificate):
+                compatible = _compatible_certificate(resource, compatible_certificates)
+                if compatible is not None and opts.certificate_mode != "rotate":
+                    operations.append(
+                        PlanOperation(
+                            PlanAction.NOOP,
+                            resource.kind,
+                            desired=resource,
+                            existing=compatible,
+                            reason="reuse compatible certificate",
+                        )
+                    )
+                    continue
+                if opts.certificate_mode == "reuse":
+                    conflicts.append(
+                        PlanConflict(
+                            code="certificate_reuse_required",
+                            message=(
+                                f"certificate {resource.identity.resource_id} has no reusable live certificate for "
+                                f"{list(resource.domain_names)!r}"
+                            ),
+                            kind=resource.kind,
+                            owner=identity.owner,
+                            resource_id=identity.resource_id,
+                        )
+                    )
+                    continue
+            if opts.adopt and opts.metadata_only_adopt:
+                operations.append(
+                    PlanOperation(
+                        PlanAction.NOOP,
+                        resource.kind,
+                        desired=resource,
+                        reason="metadata-only adopt skipped missing resource",
+                    )
+                )
+                continue
             if not cap.create:
                 conflicts.append(_capability_conflict(resource, "create"))
             else:
@@ -205,11 +249,19 @@ def compute_plan(
             continue
 
         if existing_same_key.identity is None:
+            diff = diff_resource(resource, existing_same_key)
+            diff.pop("meta", None)
             if not opts.adopt:
+                code = "adoptable_compatible_unmanaged" if not diff else "unmanaged_resource"
+                message = (
+                    f"{resource.kind.value} {resource.natural_key!r} exists and is compatible for explicit adoption"
+                    if not diff
+                    else f"{resource.kind.value} {resource.natural_key!r} exists but has no npmctl ownership metadata"
+                )
                 conflicts.append(
                     PlanConflict(
-                        code="unmanaged_resource",
-                        message=f"{resource.kind.value} {resource.natural_key!r} exists but has no npmctl ownership metadata",
+                        code=code,
+                        message=message,
                         kind=resource.kind,
                         owner=identity.owner,
                         resource_id=identity.resource_id,
@@ -217,8 +269,6 @@ def compute_plan(
                     )
                 )
                 continue
-            diff = diff_resource(resource, existing_same_key)
-            diff.pop("meta", None)
             if opts.strict_adopt and diff and not opts.allow_field_drift:
                 conflicts.append(
                     PlanConflict(
@@ -230,6 +280,9 @@ def compute_plan(
                         existing_id=existing_same_key.id,
                     )
                 )
+                continue
+            if opts.metadata_only_adopt and not cap.update:
+                conflicts.append(_capability_conflict(resource, "update", existing_id=existing_same_key.id))
                 continue
             if not cap.update:
                 conflicts.append(_capability_conflict(resource, "update", existing_id=existing_same_key.id))
@@ -263,6 +316,17 @@ def compute_plan(
             continue
 
         diff = diff_resource(resource, existing_same_key)
+        if opts.adopt and opts.metadata_only_adopt:
+            operations.append(
+                PlanOperation(
+                    PlanAction.NOOP,
+                    resource.kind,
+                    desired=resource,
+                    existing=existing_same_key,
+                    reason="metadata-only adopt leaves managed resource unchanged",
+                )
+            )
+            continue
         if not diff:
             operations.append(
                 PlanOperation(
@@ -271,6 +335,21 @@ def compute_plan(
                     desired=resource,
                     existing=existing_same_key,
                     reason="already converged",
+                )
+            )
+            continue
+        if isinstance(resource, DesiredCertificate) and opts.certificate_mode == "reuse":
+            conflicts.append(
+                PlanConflict(
+                    code="certificate_update_blocked_by_policy",
+                    message=(
+                        f"certificate {identity.resource_id} drifted but certificate mode {opts.certificate_mode!r} "
+                        "blocks certificate mutation"
+                    ),
+                    kind=resource.kind,
+                    owner=identity.owner,
+                    resource_id=identity.resource_id,
+                    existing_id=existing_same_key.id,
                 )
             )
             continue
@@ -303,6 +382,8 @@ def compute_plan(
     if opts.prune_owned:
         prune_owners = {opts.owner} if opts.owner else set(desired.owners)
         for item in all_existing:
+            if not _resource_selected(item.kind, opts):
+                continue
             if item.identity is None or item.identity.owner not in prune_owners:
                 continue
             key = (item.kind, item.identity.owner, item.identity.resource_id)
@@ -457,3 +538,25 @@ def _capability_conflict(resource: DesiredResource, operation: str, *, existing_
         resource_id=resource.identity.resource_id,
         existing_id=existing_id,
     )
+
+
+def _resource_selected(kind: ResourceKind, options: PlannerOptions) -> bool:
+    return options.resource_kinds is None or kind in options.resource_kinds
+
+
+def _certificate_match_key(certificate: DesiredCertificate | ExistingResource) -> tuple[str, tuple[str, ...]]:
+    if isinstance(certificate, ExistingResource):
+        provider = str(certificate.raw.get("provider") or certificate.raw.get("certificate_type") or "").strip().lower()
+        return provider, certificate.domain_names
+    provider = str(certificate.to_payload().get("provider") or certificate.certificate_type).strip().lower()
+    return provider, certificate.domain_names
+
+
+def _compatible_certificate(
+    desired: DesiredCertificate,
+    compatible_certificates: dict[tuple[str, tuple[str, ...]], list[ExistingResource]],
+) -> ExistingResource | None:
+    matches = compatible_certificates.get(_certificate_match_key(desired), [])
+    if len(matches) == 1:
+        return matches[0]
+    return None

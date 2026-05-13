@@ -16,6 +16,12 @@ meta:
 
 `resource_id` is the stable identity. Domain names and names are natural keys used for collision detection.
 
+Repair-safe reconcile uses the same desired-state document with CLI policy controls. The main operator toggles are:
+
+- `--only ...` to limit reconcile to selected resource families
+- `--metadata-only` during `adopt` to attach ownership without adjacent creation
+- `--certificate-mode=reuse|create|rotate` to control whether certificates are only reused, created when missing, or explicitly rotated
+
 Additional resource kinds use pass-through `api_payload` fields while keeping
 the same owner metadata contract:
 

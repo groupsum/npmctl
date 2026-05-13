@@ -10,7 +10,7 @@ from typing import Any
 import requests
 
 from npmctl.client.contracts import CONTRACTS
-from npmctl.errors import ApiError, CapabilityError
+from npmctl.errors import ApiError, CapabilityError, CertificateApiError
 from npmctl.models import ExistingResource, ExistingState, ResourceId, ResourceKind
 from npmctl.schema import Capabilities, ResourceCapabilities
 
@@ -183,8 +183,11 @@ class NpmClient:
                 raise last_error
             raise ApiError(f"{method.upper()} {path} request did not complete")
         if response.status_code < 200 or response.status_code >= 300:
-            raise ApiError(
-                f"{method.upper()} {path} failed: HTTP {response.status_code}: {self._redact(response.text)}"
+            raise _classify_api_error(
+                method.upper(),
+                path,
+                response.status_code,
+                self._redact(response.text),
             )
         if allow_empty and not response.content:
             return None
@@ -281,3 +284,25 @@ def _redact(text: str, *secrets: str | None) -> str:
     for marker in ("token", "secret", "password"):
         redacted = redacted.replace(marker, f"{marker[0]}***")
     return redacted[:1000]
+
+
+def _classify_api_error(method: str, path: str, status_code: int, text: str) -> ApiError:
+    lowered = text.lower()
+    message = f"{method} {path} failed: HTTP {status_code}: {text}"
+    if "another instance of certbot is already running" in lowered:
+        return CertificateApiError(
+            "certificate_lock_retryable",
+            message,
+            retryable=True,
+            suggested_action="retry after the active certbot operation finishes",
+            details={"http_status": status_code, "path": path},
+        )
+    if "no order for id" in lowered or "no order for" in lowered:
+        return CertificateApiError(
+            "certificate_order_stale",
+            message,
+            retryable=False,
+            suggested_action="clean up the stale certificate order in NPM before retrying",
+            details={"http_status": status_code, "path": path},
+        )
+    return ApiError(message)

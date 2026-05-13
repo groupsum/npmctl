@@ -13,9 +13,19 @@ from npmctl.apply import ApplyEngine
 from npmctl.client import NpmClient
 from npmctl.config import apply_config, load_config
 from npmctl.diagnostics import doctor_report, environment_report
-from npmctl.errors import ApiError, CapabilityError, ConflictError, MigrationError, NpmctlError, ValidationError
+from npmctl.errors import (
+    ApiError,
+    CapabilityError,
+    CertificateApiError,
+    CertificateSafetyError,
+    ConflictError,
+    MigrationError,
+    NpmctlError,
+    ValidationError,
+)
 from npmctl.loader import load_desired_state
 from npmctl.migrations import migrate_path
+from npmctl.models import ResourceKind
 from npmctl.operational import (
     compliance_artifacts,
     drift_report,
@@ -114,6 +124,11 @@ def build_parser() -> argparse.ArgumentParser:
     _add_reconcile_args(adopt)
     adopt.add_argument("--allow-field-drift", action="store_true", help="Allow adopting resources whose fields differ")
     adopt.add_argument("--force", action="store_true", help="Alias for --allow-field-drift with explicit intent")
+    adopt.add_argument(
+        "--metadata-only",
+        action="store_true",
+        help="Only attach ownership metadata to compatible unmanaged resources; never create adjacent resources",
+    )
     adopt.add_argument("--validate-output", action="store_true", help="Validate plan output against npmctl schema")
     adopt.set_defaults(needs_api=True, adopt=True)
 
@@ -159,6 +174,27 @@ def _add_reconcile_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--owner", help="Limit operation to one owner scope")
     parser.add_argument("--no-updates", action="store_true", help="Conflict on owned drift instead of updating")
     parser.add_argument("--prune-owned", action="store_true", help="Delete owned resources absent from desired state")
+    parser.add_argument(
+        "--certificate-mode",
+        choices=("reuse", "create", "rotate"),
+        default="create",
+        help="Certificate mutation policy during reconcile",
+    )
+    parser.add_argument(
+        "--only",
+        action="append",
+        choices=(
+            "proxy_hosts",
+            "certificates",
+            "access_lists",
+            "redirection_hosts",
+            "dead_hosts",
+            "streams",
+            "users",
+            "settings",
+        ),
+        help="Limit reconcile to one resource family; may be repeated",
+    )
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -173,12 +209,25 @@ def main(argv: Sequence[str] | None = None) -> int:
     except MigrationError as exc:
         write_error(args.output, "migration_error", str(exc))
         return EXIT_USAGE_OR_VALIDATION
+    except CertificateSafetyError as exc:
+        write_error(args.output, exc.code, str(exc), suggested_action=exc.suggested_action, details=exc.details)
+        return EXIT_CONFLICT
     except ConflictError as exc:
         write_error(args.output, "conflict_error", str(exc))
         return EXIT_CONFLICT
     except CapabilityError as exc:
         write_error(args.output, "capability_error", _redact_cli_message(str(exc), args))
         return EXIT_CAPABILITY
+    except CertificateApiError as exc:
+        write_error(
+            args.output,
+            exc.code,
+            _redact_cli_message(str(exc), args),
+            retryable=exc.retryable,
+            suggested_action=exc.suggested_action,
+            details=exc.details,
+        )
+        return EXIT_API
     except ApiError as exc:
         write_error(args.output, "api_error", _redact_cli_message(str(exc), args))
         return EXIT_API
@@ -304,6 +353,9 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
             adopt=args.command == "adopt",
             strict_adopt=not (getattr(args, "allow_field_drift", False) or getattr(args, "force", False)),
             allow_field_drift=getattr(args, "allow_field_drift", False) or getattr(args, "force", False),
+            metadata_only_adopt=getattr(args, "metadata_only", False),
+            resource_kinds=_parse_resource_kinds(getattr(args, "only", None)),
+            certificate_mode=_default_certificate_mode(args),
         )
         plan = compute_plan(desired=desired, existing=existing, capabilities=capabilities, options=options)
         if args.command == "drift":
@@ -324,7 +376,7 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
             return EXIT_CONFLICT
         if getattr(args, "backup_dir", None):
             write_state_backup(args.backup_dir, existing)
-        result = ApplyEngine(client=client, capabilities=capabilities).apply(plan)
+        result = ApplyEngine(client=client, capabilities=capabilities, existing_state=existing).apply(plan)
         payload = transaction_report(plan, result)
         if getattr(args, "report", None):
             write_json(args.report, payload)
@@ -449,6 +501,30 @@ def _completion_script(shell: str) -> str:
     if shell == "zsh":
         return f"#compdef npmctl\n_arguments '1:command:({commands})'\n"
     return f'complete -W "{commands}" npmctl\n'
+
+
+_RESOURCE_KIND_ALIASES: dict[str, ResourceKind] = {
+    "proxy_hosts": ResourceKind.PROXY_HOST,
+    "certificates": ResourceKind.CERTIFICATE,
+    "access_lists": ResourceKind.ACCESS_LIST,
+    "redirection_hosts": ResourceKind.REDIRECTION_HOST,
+    "dead_hosts": ResourceKind.DEAD_HOST,
+    "streams": ResourceKind.STREAM,
+    "users": ResourceKind.USER,
+    "settings": ResourceKind.SETTING,
+}
+
+
+def _parse_resource_kinds(values: Sequence[str] | None) -> frozenset[ResourceKind] | None:
+    if not values:
+        return None
+    return frozenset(_RESOURCE_KIND_ALIASES[value] for value in values)
+
+
+def _default_certificate_mode(args: argparse.Namespace) -> str:
+    if args.command == "adopt" and getattr(args, "certificate_mode", None) == "create":
+        return "reuse"
+    return getattr(args, "certificate_mode", "create")
 
 
 if __name__ == "__main__":  # pragma: no cover

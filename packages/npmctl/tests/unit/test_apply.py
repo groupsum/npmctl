@@ -3,7 +3,8 @@ from __future__ import annotations
 import pytest
 
 from npmctl.apply import ApplyEngine
-from npmctl.errors import ApiError, ConflictError, ValidationError
+from npmctl.errors import ApiError, CertificateApiError, ConflictError, ValidationError
+from npmctl.issuance import CertificateIssuanceGuard
 from npmctl.models import (
     DesiredAccessList,
     DesiredCertificate,
@@ -116,7 +117,26 @@ class RecordingClient:
 
 
 def _engine(client: RecordingClient) -> ApplyEngine:
-    return ApplyEngine(client=client, capabilities=Capabilities.full_for_tests())
+    return ApplyEngine(
+        client=client, capabilities=Capabilities.full_for_tests(), issuance_guard=RecordingIssuanceGuard()
+    )
+
+
+class RecordingIssuanceGuard(CertificateIssuanceGuard):
+    def __init__(self) -> None:
+        super().__init__(state_file="NUL", cooldown_seconds=1, inflight_ttl_seconds=1)
+        self.events: list[tuple[str, str]] = []
+
+    def begin(self, certificate: DesiredCertificate) -> str:
+        key = certificate.identity.resource_id
+        self.events.append(("begin", key))
+        return key
+
+    def succeed(self, key: str) -> None:
+        self.events.append(("succeed", key))
+
+    def fail(self, key: str, *, error_code: str) -> None:
+        self.events.append(("fail", f"{key}:{error_code}"))
 
 
 def test_apply_orders_dependencies_and_reverse_deletes() -> None:
@@ -252,3 +272,265 @@ def test_apply_reports_delete_success_and_failure() -> None:
     failing_client = RecordingClient(delete_ok=False)
     with pytest.raises(ApiError, match="delete failed"):
         _engine(failing_client).apply(plan)
+
+
+def test_apply_resolves_references_from_existing_state_scope() -> None:
+    client = RecordingClient()
+    existing_state = type(
+        "ExistingStateStub",
+        (),
+        {
+            "resources": lambda self: (
+                _existing(ResourceKind.CERTIFICATE, "cert.one", 41),
+                _existing(ResourceKind.ACCESS_LIST, "acl.one", 42),
+            )
+        },
+    )()
+    plan = Plan(
+        operations=(PlanOperation(PlanAction.CREATE, ResourceKind.PROXY_HOST, desired=_proxy()),),
+        conflicts=(),
+        existing_count=2,
+    )
+
+    ApplyEngine(client=client, capabilities=Capabilities.full_for_tests(), existing_state=existing_state).apply(plan)  # type: ignore[arg-type]
+
+    proxy_payload = client.events[0][3]
+    assert proxy_payload["certificate_id"] == 41
+    assert proxy_payload["access_list_id"] == 42
+
+
+def test_apply_certificate_mutations_use_issuance_guard() -> None:
+    client = RecordingClient()
+    guard = RecordingIssuanceGuard()
+    plan = Plan(
+        operations=(PlanOperation(PlanAction.CREATE, ResourceKind.CERTIFICATE, desired=_cert()),),
+        conflicts=(),
+        existing_count=0,
+    )
+
+    ApplyEngine(client=client, capabilities=Capabilities.full_for_tests(), issuance_guard=guard).apply(plan)
+
+    assert guard.events == [("begin", "cert.one"), ("succeed", "cert.one")]
+
+
+def test_apply_certificate_update_uses_issuance_guard_on_success() -> None:
+    client = RecordingClient()
+    guard = RecordingIssuanceGuard()
+    existing = _existing(ResourceKind.CERTIFICATE, "cert.one", 12)
+    plan = Plan(
+        operations=(
+            PlanOperation(
+                PlanAction.UPDATE,
+                ResourceKind.CERTIFICATE,
+                desired=_cert(),
+                existing=existing,
+            ),
+        ),
+        conflicts=(),
+        existing_count=1,
+    )
+
+    ApplyEngine(client=client, capabilities=Capabilities.full_for_tests(), issuance_guard=guard).apply(plan)
+
+    assert guard.events == [("begin", "cert.one"), ("succeed", "cert.one")]
+
+
+def test_apply_certificate_mutations_record_guard_failure_on_certificate_api_error() -> None:
+    class FailingClient(RecordingClient):
+        def create_resource(self, kind: ResourceKind, payload: dict) -> ExistingResource:
+            raise CertificateApiError(
+                "certificate_lock_retryable",
+                "certbot busy",
+                retryable=True,
+                suggested_action="retry later",
+            )
+
+    guard = RecordingIssuanceGuard()
+    plan = Plan(
+        operations=(PlanOperation(PlanAction.CREATE, ResourceKind.CERTIFICATE, desired=_cert()),),
+        conflicts=(),
+        existing_count=0,
+    )
+
+    with pytest.raises(CertificateApiError):
+        ApplyEngine(client=FailingClient(), capabilities=Capabilities.full_for_tests(), issuance_guard=guard).apply(
+            plan
+        )
+
+    assert guard.events == [("begin", "cert.one"), ("fail", "cert.one:certificate_api_error")]
+
+
+def test_apply_certificate_update_records_guard_failure_on_certificate_api_error() -> None:
+    class FailingClient(RecordingClient):
+        def update_resource(
+            self, kind: ResourceKind, resource_id: int, payload: dict, *, method: str = "put"
+        ) -> ExistingResource:
+            raise CertificateApiError(
+                "certificate_lock_retryable",
+                "certbot busy",
+                retryable=True,
+                suggested_action="retry later",
+            )
+
+    guard = RecordingIssuanceGuard()
+    existing = _existing(ResourceKind.CERTIFICATE, "cert.one", 9)
+    plan = Plan(
+        operations=(
+            PlanOperation(
+                PlanAction.UPDATE,
+                ResourceKind.CERTIFICATE,
+                desired=_cert(),
+                existing=existing,
+            ),
+        ),
+        conflicts=(),
+        existing_count=1,
+    )
+
+    with pytest.raises(CertificateApiError):
+        ApplyEngine(client=FailingClient(), capabilities=Capabilities.full_for_tests(), issuance_guard=guard).apply(
+            plan
+        )
+
+    assert guard.events == [("begin", "cert.one"), ("fail", "cert.one:certificate_api_error")]
+
+
+def test_apply_certificate_create_records_guard_failure_on_generic_error() -> None:
+    class FailingClient(RecordingClient):
+        def create_resource(self, kind: ResourceKind, payload: dict) -> ExistingResource:
+            raise RuntimeError("boom")
+
+    guard = RecordingIssuanceGuard()
+    plan = Plan(
+        operations=(PlanOperation(PlanAction.CREATE, ResourceKind.CERTIFICATE, desired=_cert()),),
+        conflicts=(),
+        existing_count=0,
+    )
+
+    with pytest.raises(RuntimeError, match="boom"):
+        ApplyEngine(client=FailingClient(), capabilities=Capabilities.full_for_tests(), issuance_guard=guard).apply(
+            plan
+        )
+
+    assert guard.events == [("begin", "cert.one"), ("fail", "cert.one:certificate_create_failed")]
+
+
+def test_apply_non_certificate_failures_do_not_touch_issuance_guard() -> None:
+    class FailingCreateApiClient(RecordingClient):
+        def create_resource(self, kind: ResourceKind, payload: dict) -> ExistingResource:
+            raise CertificateApiError(
+                "certificate_lock_retryable",
+                "proxy create hit certbot lock",
+                retryable=True,
+                suggested_action="retry later",
+            )
+
+    class FailingCreateGenericClient(RecordingClient):
+        def create_resource(self, kind: ResourceKind, payload: dict) -> ExistingResource:
+            raise RuntimeError("proxy create failed")
+
+    class FailingUpdateGenericClient(RecordingClient):
+        def update_resource(
+            self, kind: ResourceKind, resource_id: int, payload: dict, *, method: str = "put"
+        ) -> ExistingResource:
+            raise RuntimeError("proxy update failed")
+
+    class FailingUpdateApiClient(RecordingClient):
+        def update_resource(
+            self, kind: ResourceKind, resource_id: int, payload: dict, *, method: str = "put"
+        ) -> ExistingResource:
+            raise CertificateApiError(
+                "certificate_lock_retryable",
+                "proxy update hit certbot lock",
+                retryable=True,
+                suggested_action="retry later",
+            )
+
+    create_guard = RecordingIssuanceGuard()
+    create_plan = Plan(
+        operations=(
+            PlanOperation(
+                PlanAction.CREATE,
+                ResourceKind.PROXY_HOST,
+                desired=_proxy(certificate_ref=None, access_list_ref=None),
+            ),
+        ),
+        conflicts=(),
+        existing_count=0,
+    )
+    with pytest.raises(CertificateApiError):
+        ApplyEngine(
+            client=FailingCreateApiClient(),
+            capabilities=Capabilities.full_for_tests(),
+            issuance_guard=create_guard,
+        ).apply(create_plan)
+    assert create_guard.events == []
+
+    create_guard = RecordingIssuanceGuard()
+    with pytest.raises(RuntimeError, match="proxy create failed"):
+        ApplyEngine(
+            client=FailingCreateGenericClient(),
+            capabilities=Capabilities.full_for_tests(),
+            issuance_guard=create_guard,
+        ).apply(create_plan)
+    assert create_guard.events == []
+
+    update_guard = RecordingIssuanceGuard()
+    update_plan = Plan(
+        operations=(
+            PlanOperation(
+                PlanAction.UPDATE,
+                ResourceKind.PROXY_HOST,
+                desired=_proxy(certificate_ref=None, access_list_ref=None),
+                existing=_existing(ResourceKind.PROXY_HOST, "proxy.one", 13),
+            ),
+        ),
+        conflicts=(),
+        existing_count=1,
+    )
+    with pytest.raises(RuntimeError, match="proxy update failed"):
+        ApplyEngine(
+            client=FailingUpdateGenericClient(),
+            capabilities=Capabilities.full_for_tests(),
+            issuance_guard=update_guard,
+        ).apply(update_plan)
+    assert update_guard.events == []
+
+    update_guard = RecordingIssuanceGuard()
+    with pytest.raises(CertificateApiError):
+        ApplyEngine(
+            client=FailingUpdateApiClient(),
+            capabilities=Capabilities.full_for_tests(),
+            issuance_guard=update_guard,
+        ).apply(update_plan)
+    assert update_guard.events == []
+
+
+def test_apply_certificate_update_records_guard_failure_on_generic_error() -> None:
+    class FailingClient(RecordingClient):
+        def update_resource(
+            self, kind: ResourceKind, resource_id: int, payload: dict, *, method: str = "put"
+        ) -> ExistingResource:
+            raise RuntimeError("boom")
+
+    guard = RecordingIssuanceGuard()
+    existing = _existing(ResourceKind.CERTIFICATE, "cert.one", 7)
+    plan = Plan(
+        operations=(
+            PlanOperation(
+                PlanAction.UPDATE,
+                ResourceKind.CERTIFICATE,
+                desired=_cert(),
+                existing=existing,
+            ),
+        ),
+        conflicts=(),
+        existing_count=1,
+    )
+
+    with pytest.raises(RuntimeError, match="boom"):
+        ApplyEngine(client=FailingClient(), capabilities=Capabilities.full_for_tests(), issuance_guard=guard).apply(
+            plan
+        )
+
+    assert guard.events == [("begin", "cert.one"), ("fail", "cert.one:certificate_update_failed")]

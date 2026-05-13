@@ -21,16 +21,18 @@ def write_output(output: str, payload: Any, text: str) -> None:
             sys.stdout.write("\n")
 
 
-def write_error(output: str, code: str, message: str) -> None:
+def write_error(output: str, code: str, message: str, **extra: Any) -> None:
     """Write JSON or text error output to stderr."""
 
     if output == "json":
-        sys.stderr.write(
-            json.dumps({"ok": False, "error": {"code": code, "message": message}}, indent=2, sort_keys=True)
-        )
+        payload = {"ok": False, "error": {"code": code, "message": message} | extra}
+        sys.stderr.write(json.dumps(payload, indent=2, sort_keys=True))
         sys.stderr.write("\n")
     else:
-        sys.stderr.write(f"{code}: {message}\n")
+        detail = ""
+        if extra:
+            detail = " " + " ".join(f"{key}={value!r}" for key, value in sorted(extra.items()))
+        sys.stderr.write(f"{code}: {message}{detail}\n")
 
 
 def format_plan_text(plan: Plan) -> str:

@@ -6,7 +6,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from npmctl.client import NpmClient
-from npmctl.errors import ApiError, ConflictError, ValidationError
+from npmctl.errors import ApiError, CertificateApiError, ConflictError, ValidationError
+from npmctl.issuance import CertificateIssuanceGuard
 from npmctl.metadata import merge_managed_meta
 from npmctl.models import (
     DesiredAccessList,
@@ -14,6 +15,7 @@ from npmctl.models import (
     DesiredGenericResource,
     DesiredProxyHost,
     ExistingResource,
+    ExistingState,
     PlanAction,
     ResourceKind,
 )
@@ -35,10 +37,22 @@ class ApplyResult:
 class ApplyEngine:
     """Executes a validated plan in dependency order."""
 
-    def __init__(self, *, client: NpmClient, capabilities: Capabilities) -> None:
+    def __init__(
+        self,
+        *,
+        client: NpmClient,
+        capabilities: Capabilities,
+        existing_state: ExistingState | None = None,
+        issuance_guard: CertificateIssuanceGuard | None = None,
+    ) -> None:
         self.client = client
         self.capabilities = capabilities
         self.created_by_resource_id: dict[str, ExistingResource] = {}
+        self.issuance_guard = issuance_guard or CertificateIssuanceGuard()
+        if existing_state is not None:
+            for resource in existing_state.resources():
+                if resource.identity is not None:
+                    self.created_by_resource_id.setdefault(resource.identity.resource_id, resource)
 
     def apply(self, plan: Plan) -> ApplyResult:
         """Apply the plan. Conflicts prevent all mutations."""
@@ -70,7 +84,21 @@ class ApplyEngine:
     def _create(self, operation: PlanOperation) -> dict[str, Any]:
         desired = _require_desired(operation)
         payload = self._payload_for(desired)
-        created = self.client.create_resource(desired.kind, payload)
+        issuance_key: str | None = None
+        try:
+            if isinstance(desired, DesiredCertificate):
+                issuance_key = self.issuance_guard.begin(desired)
+            created = self.client.create_resource(desired.kind, payload)
+        except CertificateApiError:
+            if issuance_key is not None:
+                self.issuance_guard.fail(issuance_key, error_code="certificate_api_error")
+            raise
+        except Exception:
+            if issuance_key is not None:
+                self.issuance_guard.fail(issuance_key, error_code="certificate_create_failed")
+            raise
+        if issuance_key is not None:
+            self.issuance_guard.succeed(issuance_key)
         self.created_by_resource_id[desired.identity.resource_id] = created
         return {
             "action": "create",
@@ -84,7 +112,21 @@ class ApplyEngine:
         existing = _require_existing(operation)
         payload = self._merge_existing_with_desired(existing, desired)
         cap = self.capabilities.for_kind(desired.kind)
-        updated = self.client.update_resource(desired.kind, existing.id, payload, method=cap.update_method or "put")
+        issuance_key: str | None = None
+        try:
+            if isinstance(desired, DesiredCertificate):
+                issuance_key = self.issuance_guard.begin(desired)
+            updated = self.client.update_resource(desired.kind, existing.id, payload, method=cap.update_method or "put")
+        except CertificateApiError:
+            if issuance_key is not None:
+                self.issuance_guard.fail(issuance_key, error_code="certificate_api_error")
+            raise
+        except Exception:
+            if issuance_key is not None:
+                self.issuance_guard.fail(issuance_key, error_code="certificate_update_failed")
+            raise
+        if issuance_key is not None:
+            self.issuance_guard.succeed(issuance_key)
         return {
             "action": "update",
             "kind": desired.kind.value,
