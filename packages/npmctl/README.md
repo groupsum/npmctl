@@ -1,6 +1,55 @@
-# npmctl
+<h1 align="center">npmctl</h1>
 
-`npmctl` is the Python package and console script for owner-scoped Nginx Proxy Manager automation. It validates desired-state YAML, computes safe plans, applies clean changes, and adopts unmanaged resources only when explicitly requested.
+<p align="center"><strong>Owner-scoped GitOps for Nginx Proxy Manager</strong></p>
+
+<p align="center">
+  Validate desired-state YAML, plan safe owner-scoped changes, apply clean reconciles, and adopt existing NPM resources only when you ask for it.
+</p>
+
+<p align="center">
+  <a href="https://pypi.org/project/npmctl/"><img src="https://img.shields.io/pypi/v/npmctl.svg" alt="PyPI version"></a>
+  <a href="https://pypi.org/project/npmctl/"><img src="https://img.shields.io/pypi/pyversions/npmctl.svg" alt="Python versions"></a>
+  <a href="https://github.com/groupsum/npmctl/actions/workflows/ci.yml"><img src="https://github.com/groupsum/npmctl/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
+  <a href="https://github.com/groupsum/npmctl/actions/workflows/live-npm-gate.yml"><img src="https://github.com/groupsum/npmctl/actions/workflows/live-npm-gate.yml/badge.svg?branch=master" alt="Live NPM Gate"></a>
+  <a href="https://github.com/groupsum/npmctl/blob/master/LICENSE"><img src="https://img.shields.io/github/license/groupsum/npmctl" alt="License"></a>
+</p>
+
+<p align="center">
+  <a href="https://hits.sh/github.com/groupsum/npmctl/blob/master/packages/npmctl/README.md/"><img src="https://hits.sh/github.com/groupsum/npmctl/blob/master/packages/npmctl/README.md.svg?label=npmctl%20hits" alt="npmctl package README hits"></a>
+  <a href="https://pepy.tech/projects/npmctl"><img src="https://static.pepy.tech/badge/npmctl" alt="npmctl downloads"></a>
+</p>
+
+`npmctl` is the Python package and console script for declarative, owner-scoped Nginx Proxy Manager automation. It manages proxy hosts, certificates, access lists, redirection hosts, dead hosts, streams, users, settings, and provider-backed DNS records without silently mutating foreign-owned resources.
+
+## Why npmctl
+
+- Owner-scoped reconciliation instead of global mutable state
+- Explicit `plan`, `apply`, and `adopt` flows instead of ad hoc API scripting
+- Safe reference handling for certificates and access lists
+- Fail-closed behavior when the target NPM schema does not support a required operation
+- CLI-first workflows that fit GitOps, CI, and controlled repair operations
+
+## FAQ
+
+### What is npmctl?
+
+**Answer:** `npmctl` is a GitOps-style controller for Nginx Proxy Manager that reads desired-state YAML, compares it to the live NPM API, and produces safe owner-scoped plans before any mutation happens.
+
+### What problem does npmctl solve?
+
+**Answer:** `npmctl` replaces manual NPM clicking and one-off API scripts with repeatable desired state, explicit adoption, conflict detection, and controlled reconciliation for reverse-proxy resources.
+
+### Does npmctl modify resources it does not own?
+
+**Answer:** No. `npmctl` treats NPM resources as owner-scoped, refuses to mutate foreign-owned resources, and only attaches metadata to unmanaged resources when you run `npmctl adopt`.
+
+### How does npmctl handle certificate issuance and rotation?
+
+**Answer:** `npmctl` treats certificates as declarative resources in the same desired state as proxy hosts. Issuance happens when a desired certificate must be created, and rotation happens through explicit reconcile policy rather than hidden mutation of unrelated resources.
+
+### Can npmctl adopt existing manually created NPM resources?
+
+**Answer:** Yes. `npmctl adopt` can attach npmctl ownership metadata to compatible unmanaged resources so future plans and applies can manage them under explicit owner scope.
 
 ## Install
 
@@ -50,6 +99,34 @@ Or pass them directly:
 
 ```bash
 npmctl --base-url http://127.0.0.1:81/api --identity admin@example.com --secret changeme health
+```
+
+## Quick Start
+
+Validate desired state without touching the API:
+
+```bash
+npmctl validate ./desired-state
+npmctl --output json validate ./desired-state
+```
+
+Plan owner-scoped changes:
+
+```bash
+npmctl plan ./desired-state --owner workload-a
+```
+
+Apply a clean plan:
+
+```bash
+npmctl apply ./desired-state --owner workload-a
+```
+
+Adopt unmanaged matching resources:
+
+```bash
+npmctl adopt ./desired-state --owner workload-a
+npmctl adopt ./desired-state --owner workload-a --allow-field-drift
 ```
 
 ## Desired State
@@ -111,69 +188,8 @@ proxy_hosts:
       resource_id: proxy.app
 ```
 
-## Commands
-
-Validate files without calling the NPM API:
-
-```bash
-npmctl validate ./desired-state
-npmctl --output json validate ./desired-state
-```
-
-Check or write desired-state schema migrations:
-
-```bash
-npmctl migrate ./desired-state --check
-npmctl migrate ./desired-state --write
-```
-
-Check the target NPM API:
-
-```bash
-npmctl health
-npmctl schema fetch --write npm-openapi.json
-npmctl schema capabilities
-npmctl schema check
-```
-
-Plan and apply by owner:
-
-```bash
-npmctl plan ./desired-state --owner workload-a
-npmctl apply ./desired-state --owner workload-a
-```
-
-Preview apply without mutation:
-
-```bash
-npmctl apply ./desired-state --owner workload-a --dry-run
-```
-
-Prune owned resources absent from desired state:
-
-```bash
-npmctl apply ./desired-state --owner workload-a --prune-owned
-```
-
-Adopt unmanaged matching resources:
-
-```bash
-npmctl adopt ./desired-state --owner workload-a
-npmctl adopt ./desired-state --owner workload-a --allow-field-drift
-```
-
-## Exit Codes
-
-- `0`: success
-- `1`: plan conflict
-- `2`: usage, validation, or migration error
-- `3`: API error
-- `4`: endpoint capability error
-
 ## More Documentation
 
-The source repository includes detailed docs and examples:
-
-- https://github.com/groupsum/npmctl
-- https://github.com/groupsum/npmctl/tree/master/examples/desired-state
-- https://github.com/groupsum/npmctl/tree/master/docs
+- Repository: https://github.com/groupsum/npmctl
+- Examples: https://github.com/groupsum/npmctl/tree/master/examples/desired-state
+- Docs: https://github.com/groupsum/npmctl/tree/master/docs

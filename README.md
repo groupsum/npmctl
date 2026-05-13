@@ -1,11 +1,49 @@
-# npmctl
+<h1 align="center">npmctl</h1>
 
-[![CI](https://github.com/groupsum/npmctl/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/groupsum/npmctl/actions/workflows/ci.yml)
-[![Python Matrix](https://github.com/groupsum/npmctl/actions/workflows/python-matrix.yml/badge.svg?branch=master)](https://github.com/groupsum/npmctl/actions/workflows/python-matrix.yml)
-[![Live NPM Gate](https://github.com/groupsum/npmctl/actions/workflows/live-npm-gate.yml/badge.svg?branch=master)](https://github.com/groupsum/npmctl/actions/workflows/live-npm-gate.yml)
-[![PyPI](https://img.shields.io/pypi/v/npmctl.svg)](https://pypi.org/project/npmctl/)
+<p align="center"><strong>Owner-scoped GitOps for Nginx Proxy Manager</strong></p>
+
+<p align="center">
+  Validate desired-state YAML, plan safe owner-scoped changes, apply clean reconciles, and adopt existing NPM resources only when you ask for it.
+</p>
+
+<p align="center">
+  <a href="https://pypi.org/project/npmctl/"><img src="https://img.shields.io/pypi/v/npmctl.svg" alt="PyPI version"></a>
+  <a href="https://pypi.org/project/npmctl/"><img src="https://img.shields.io/pypi/pyversions/npmctl.svg" alt="Python versions"></a>
+  <a href="https://github.com/groupsum/npmctl/actions/workflows/ci.yml"><img src="https://github.com/groupsum/npmctl/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
+  <a href="https://github.com/groupsum/npmctl/actions/workflows/python-matrix.yml"><img src="https://github.com/groupsum/npmctl/actions/workflows/python-matrix.yml/badge.svg?branch=master" alt="Python Matrix"></a>
+  <a href="https://github.com/groupsum/npmctl/actions/workflows/live-npm-gate.yml"><img src="https://github.com/groupsum/npmctl/actions/workflows/live-npm-gate.yml/badge.svg?branch=master" alt="Live NPM Gate"></a>
+  <a href="https://github.com/groupsum/npmctl/blob/master/LICENSE"><img src="https://img.shields.io/github/license/groupsum/npmctl" alt="License"></a>
+</p>
+
+<p align="center">
+  <a href="https://hits.sh/github.com/groupsum/npmctl/blob/master/README.md/"><img src="https://hits.sh/github.com/groupsum/npmctl/blob/master/README.md.svg?label=repo%20hits" alt="Top-level README hits"></a>
+  <a href="https://pepy.tech/projects/npmctl"><img src="https://static.pepy.tech/badge/npmctl" alt="npmctl downloads"></a>
+  <a href="https://pepy.tech/projects/npmctl-namecheap"><img src="https://static.pepy.tech/badge/npmctl-namecheap" alt="npmctl-namecheap downloads"></a>
+</p>
 
 `npmctl` is an owner-scoped GitOps controller for Nginx Proxy Manager. It validates desired-state YAML, plans safe changes against a live NPM API, applies clean plans, and adopts unmanaged resources only when explicitly requested.
+
+## FAQ
+
+### What is npmctl?
+
+**Answer:** `npmctl` is a declarative controller for Nginx Proxy Manager that turns YAML desired state into safe owner-scoped plans, applies clean reconciles, and blocks unsafe mutations before they hit production.
+
+### What problem does npmctl solve?
+
+**Answer:** `npmctl` replaces manual NPM clicking and brittle API scripts with repeatable plan/apply/adopt workflows for proxy hosts, certificates, access lists, and related resources.
+
+### Does npmctl modify resources it does not own?
+
+**Answer:** No. `npmctl` treats NPM resources as owner-scoped, refuses to mutate foreign-owned resources, and requires explicit adoption before unmanaged resources come under npmctl control.
+
+### How does npmctl handle certificate issuance and rotation?
+
+**Answer:** `npmctl` treats certificates as declarative resources in desired state. Issuance happens when a desired certificate must be created, and rotation is controlled through reconcile policy rather than implicit side effects during unrelated repair work.
+
+### Can npmctl adopt existing manual resources safely?
+
+**Answer:** Yes. `npmctl adopt` is the explicit path for attaching npmctl ownership metadata to compatible unmanaged resources so later plans and applies remain conservative and traceable.
 
 It manages:
 
