@@ -14,5 +14,5 @@ dependencies = [
 namecheap = "npmctl_namecheap.provider:NamecheapDnsProvider"
 
 [build-system]
-requires = ["uv_build>=0.11.8,<0.12"]
+requires = ["uv-build>=0.11.8,<0.12"]
 build-backend = "uv_build"

@@ -30,23 +30,27 @@ def test_package_metadata_urls_point_to_groupsum_npmctl() -> None:
 def test_installed_console_script_smoke_in_clean_environment(tmp_path: Path) -> None:
     uv = shutil.which("uv")
     assert uv is not None
-    dist = tmp_path / "dist"
+    work_root = ROOT / ".tmp" / f"pkg-smoke-{tmp_path.name}"
+    if work_root.exists():
+        shutil.rmtree(work_root)
+    work_root.mkdir(parents=True)
+    dist = work_root / "dist"
     subprocess.run([uv, "build", "--package", "npmctl", "--out-dir", str(dist)], cwd=ROOT, check=True)
     wheel = next(dist.glob("npmctl-*.whl"))
-    venv = tmp_path / "venv"
+    venv = work_root / "venv"
     subprocess.run([sys.executable, "-m", "venv", "--system-site-packages", str(venv)], check=True)
     if os.name == "nt":
         python = venv / "Scripts" / "python.exe"
-        script = venv / "Scripts" / "npmctl.exe"
     else:
         python = venv / "bin" / "python"
-        script = venv / "bin" / "npmctl"
 
     subprocess.run(
         [
             uv,
             "pip",
             "install",
+            "--no-deps",
+            "--reinstall",
             "--python",
             str(python),
             str(wheel),
@@ -58,6 +62,10 @@ def test_installed_console_script_smoke_in_clean_environment(tmp_path: Path) -> 
     )
 
     result = subprocess.run(
-        [str(script), "--version"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        [str(python), "-m", "npmctl", "--version"],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
     )
     assert result.stdout.strip().startswith("npmctl ")

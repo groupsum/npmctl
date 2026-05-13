@@ -9,8 +9,6 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from npmctl import __version__
-from npmctl.apply import ApplyEngine
-from npmctl.client import NpmClient
 from npmctl.config import apply_config, load_config
 from npmctl.diagnostics import doctor_report, environment_report
 from npmctl.errors import (
@@ -23,29 +21,41 @@ from npmctl.errors import (
     NpmctlError,
     ValidationError,
 )
-from npmctl.loader import load_desired_state
-from npmctl.migrations import migrate_path
 from npmctl.models import ResourceKind
-from npmctl.operational import (
-    compliance_artifacts,
-    drift_report,
-    rollback_plan,
-    transaction_report,
-    validate_compliance_gate,
-    validate_plan_output,
-    write_json,
-    write_state_backup,
-)
 from npmctl.output import format_plan_text, write_error, write_output
-from npmctl.plugins import PluginRegistry
-from npmctl.planner import PlannerOptions, compute_plan
-from npmctl.schema import Capabilities, load_openapi_schema
 
 EXIT_OK = 0
 EXIT_CONFLICT = 1
 EXIT_USAGE_OR_VALIDATION = 2
 EXIT_API = 3
 EXIT_CAPABILITY = 4
+
+NpmClient: Any | None = None
+_PLUGIN_REGISTRY_IMPL: Any | None = None
+
+
+class PluginRegistry:
+    """Lazy plugin registry proxy for CLI patch points."""
+
+    @staticmethod
+    def discover() -> Any:
+        return _plugin_registry_cls().discover()
+
+
+def load_desired_state(*args: Any, **kwargs: Any) -> Any:
+    """Lazy desired-state loader wrapper for CLI patch points."""
+
+    from npmctl.loader import load_desired_state as _load_desired_state
+
+    return _load_desired_state(*args, **kwargs)
+
+
+def validate_plan_output(*args: Any, **kwargs: Any) -> Any:
+    """Lazy plan-output validator wrapper for CLI patch points."""
+
+    from npmctl.operational import validate_plan_output as _validate_plan_output
+
+    return _validate_plan_output(*args, **kwargs)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -260,6 +270,8 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
         return EXIT_OK
 
     if args.command == "compliance":
+        from npmctl.operational import compliance_artifacts, validate_compliance_gate
+
         if args.compliance_command == "gate":
             payload = validate_compliance_gate(args.artifact_dir)
             write_output(args.output, payload, json.dumps(payload, indent=2, sort_keys=True))
@@ -285,6 +297,8 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
         return _dns_command(args)
 
     if args.command == "migrate":
+        from npmctl.migrations import migrate_path
+
         if args.write and args.check:
             raise ValidationError("migrate --write and --check cannot be combined")
         results = migrate_path(args.path, write=args.write)
@@ -298,12 +312,12 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
         write_output(args.output, payload, f"migrations needed: {len(changed)}\nwritten: {str(args.write).lower()}")
         return EXIT_USAGE_OR_VALIDATION if changed and args.check else EXIT_OK
 
-    client: NpmClient | None = None
+    client = None
     if getattr(args, "needs_api", False) or (
         getattr(args, "needs_api_optional_schema", False) and not getattr(args, "schema", None)
     ):
         _require_api_args(args, parser)
-        client = NpmClient(
+        client = _npm_client_cls()(
             base_url=args.base_url, identity=args.identity, secret=args.secret, timeout_s=args.timeout or 15.0
         )
 
@@ -311,7 +325,7 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
         health = None
         capabilities = None
         if args.base_url and args.identity and args.secret:
-            client = NpmClient(
+            client = _npm_client_cls()(
                 base_url=args.base_url,
                 identity=args.identity,
                 secret=args.secret,
@@ -339,6 +353,16 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
         return EXIT_OK
 
     if args.command in {"plan", "apply", "adopt", "drift"}:
+        from npmctl.apply import ApplyEngine
+        from npmctl.operational import (
+            drift_report,
+            rollback_plan,
+            transaction_report,
+            write_json,
+            write_state_backup,
+        )
+        from npmctl.planner import PlannerOptions, compute_plan
+
         assert client is not None
         desired = load_desired_state(args.desired_state)
         capabilities = client.capabilities()
@@ -392,7 +416,9 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     return EXIT_USAGE_OR_VALIDATION  # pragma: no cover
 
 
-def _schema_command(args: argparse.Namespace, client: NpmClient | None) -> int:
+def _schema_command(args: argparse.Namespace, client: Any | None) -> int:
+    from npmctl.schema import Capabilities, load_openapi_schema
+
     if args.schema_command == "fetch":
         assert client is not None
         payload = client.openapi_schema()
@@ -525,6 +551,24 @@ def _default_certificate_mode(args: argparse.Namespace) -> str:
     if args.command == "adopt" and getattr(args, "certificate_mode", None) == "create":
         return "reuse"
     return getattr(args, "certificate_mode", "create")
+
+
+def _npm_client_cls() -> Any:
+    global NpmClient
+    if NpmClient is None:
+        from npmctl.client import NpmClient as _NpmClient
+
+        NpmClient = _NpmClient
+    return NpmClient
+
+
+def _plugin_registry_cls() -> Any:
+    global _PLUGIN_REGISTRY_IMPL
+    if _PLUGIN_REGISTRY_IMPL is None:
+        from npmctl.plugins import PluginRegistry as _PluginRegistry
+
+        _PLUGIN_REGISTRY_IMPL = _PluginRegistry
+    return _PLUGIN_REGISTRY_IMPL
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
 import time
 from pathlib import Path
 from typing import Any
@@ -129,10 +130,7 @@ def _default_state_file() -> Path:
     base = os.getenv("NPMCTL_CERTIFICATE_STATE_DIR")
     if base:
         return Path(base) / "certificate-issuance-state.json"
-    local_appdata = os.getenv("LOCALAPPDATA")
-    if local_appdata:
-        return Path(local_appdata) / "npmctl" / "certificate-issuance-state.json"
-    return Path.home() / ".npmctl" / "certificate-issuance-state.json"
+    return Path(tempfile.gettempdir()) / "npmctl" / "certificate-issuance-state.json"
 
 
 def _isoformat(timestamp: float) -> str:

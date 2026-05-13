@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import tempfile
 from pathlib import Path
 
 import pytest
 
+from npmctl import cli
 from npmctl.cli import EXIT_API, EXIT_CONFLICT, _default_certificate_mode, _parse_resource_kinds, main
 from npmctl.client.base import _classify_api_error
 from npmctl.errors import CertificateApiError, CertificateSafetyError
@@ -75,12 +77,8 @@ def test_certificate_issuance_default_paths(monkeypatch) -> None:
     monkeypatch.setenv("LOCALAPPDATA", "C:/Users/test/AppData/Local")
     assert (
         CertificateIssuanceGuard().state_file
-        == Path("C:/Users/test/AppData/Local") / "npmctl" / "certificate-issuance-state.json"
+        == Path(tempfile.gettempdir()) / "npmctl" / "certificate-issuance-state.json"
     )
-
-    monkeypatch.delenv("LOCALAPPDATA")
-    monkeypatch.setattr(Path, "home", lambda: Path("C:/Users/test"))
-    assert CertificateIssuanceGuard().state_file == Path("C:/Users/test/.npmctl/certificate-issuance-state.json")
 
 
 def test_certificate_api_error_classification() -> None:
@@ -147,6 +145,16 @@ def test_cli_resource_scope_and_adopt_certificate_mode_helpers() -> None:
         {ResourceKind.PROXY_HOST, ResourceKind.CERTIFICATE}
     )
     assert _parse_resource_kinds(None) is None
+
+
+def test_cli_plugin_registry_cache_helper_returns_cached_impl() -> None:
+    original = cli._PLUGIN_REGISTRY_IMPL
+    sentinel = object()
+    cli._PLUGIN_REGISTRY_IMPL = sentinel
+    try:
+        assert cli._plugin_registry_cls() is sentinel
+    finally:
+        cli._PLUGIN_REGISTRY_IMPL = original
 
 
 def test_text_error_output_includes_structured_details(capsys) -> None:
