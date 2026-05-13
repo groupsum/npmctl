@@ -5,7 +5,8 @@ description = "Owner-scoped plan/apply/adopt controller for Nginx Proxy Manager 
 readme = "README.md"
 requires-python = ">=3.10,<3.15"
 license = "Apache-2.0"
-authors = [{ name = "npmctl contributors" }]
+license-files = ["LICENSE"]
+authors = [{ name = "Jacob Stewart", email = "jacob@swarmauri.com" }]
 keywords = [
   "nginx-proxy-manager",
   "reverse-proxy",
