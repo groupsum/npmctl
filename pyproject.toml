@@ -1,6 +1,6 @@
 [project]
 name = "npmctl-workspace"
-version = "0.3.5"
+version = "0.3.6"
 description = "Workspace root for npmctl, an owner-scoped Nginx Proxy Manager controller."
 readme = "README.md"
 requires-python = ">=3.10"
