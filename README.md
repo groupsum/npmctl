@@ -72,7 +72,7 @@ certificate and DNS providers.
 
 ## Requirements
 
-- Python `3.10`, `3.11`, `3.12`, or `3.13`
+- Python `3.10`, `3.11`, `3.12`, `3.13`, or `3.14`
 - Access to a Nginx Proxy Manager API, usually `http://host:81/api`
 - NPM admin credentials or an account with permissions for the resources you want to manage
 - Optional for local development: Docker and Docker Compose

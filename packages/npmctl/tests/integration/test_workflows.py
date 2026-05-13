@@ -32,6 +32,7 @@ def test_workflow_trigger_and_gate_semantics() -> None:
         "3.11",
         "3.12",
         "3.13",
+        "3.14",
     ]
 
     assert live_npm["name"] == "Live NPM Gate"

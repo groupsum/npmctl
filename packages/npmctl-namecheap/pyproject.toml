@@ -3,7 +3,7 @@ name = "npmctl-namecheap"
 version = "0.3.3"
 description = "Namecheap DNS provider extension for npmctl."
 readme = "README.md"
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.10,<3.15"
 license = "Apache-2.0"
 authors = [{ name = "npmctl contributors" }]
 dependencies = [
