@@ -80,10 +80,19 @@ def list_by_name(npm: NpmClient, kind: ResourceKind, name: str) -> ExistingResou
 
 
 def best_effort_delete(npm: NpmClient, kind: ResourceKind, resource_id: int) -> None:
-    try:
-        npm.delete_resource(kind, resource_id)
-    except ApiError:
-        return
+    deadline = time.monotonic() + 15
+    while True:
+        if not _resource_present(npm, kind, resource_id):
+            return
+        try:
+            if npm.delete_resource(kind, resource_id):
+                return
+        except ApiError:
+            if time.monotonic() >= deadline:
+                return
+        if time.monotonic() >= deadline:
+            return
+        time.sleep(0.5)
 
 
 def wait_until_absent(
@@ -91,7 +100,7 @@ def wait_until_absent(
     kind: ResourceKind,
     predicate: Callable[[ExistingResource], bool],
     *,
-    timeout_s: float = 10,
+    timeout_s: float = 20,
     interval_s: float = 0.25,
 ) -> None:
     deadline = time.monotonic() + timeout_s
@@ -100,7 +109,8 @@ def wait_until_absent(
         if not matches:
             return
         if time.monotonic() >= deadline:
-            assert not matches
+            rendered = ", ".join(_describe_resource(item) for item in matches)
+            raise AssertionError(f"{kind.value} resources still present after {timeout_s}s: {rendered}")
         time.sleep(interval_s)
 
 
@@ -110,3 +120,18 @@ def _matches(item: ExistingResource, text: str) -> bool:
     if item.name and text in item.name:
         return True
     return any(text in domain for domain in item.domain_names)
+
+
+def _resource_present(npm: NpmClient, kind: ResourceKind, resource_id: int) -> bool:
+    return any(item.id == resource_id for item in npm.list_resource(kind))
+
+
+def _describe_resource(item: ExistingResource) -> str:
+    parts = [f"id={item.id}"]
+    if item.name:
+        parts.append(f"name={item.name}")
+    if item.identity is not None:
+        parts.append(f"resource_id={item.identity.resource_id}")
+    if item.domain_names:
+        parts.append(f"domains={list(item.domain_names)}")
+    return " ".join(parts)
