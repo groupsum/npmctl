@@ -2,10 +2,6 @@
 
 from __future__ import annotations
 
-try:
-    import tomllib
-except ModuleNotFoundError:  # pragma: no cover - Python < 3.11
-    import tomli as tomllib
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +15,10 @@ def load_config(path: str | None) -> dict[str, Any]:
 
     if not path:
         return {}
+    try:
+        import tomllib
+    except ModuleNotFoundError:  # pragma: no cover - Python < 3.11
+        import tomli as tomllib
     config_path = Path(path)
     try:
         parsed = tomllib.loads(config_path.read_text(encoding="utf-8"))

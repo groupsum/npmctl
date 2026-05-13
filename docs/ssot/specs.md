@@ -1,6 +1,6 @@
 # Specs
 
-Generated entries: 17
+Generated entries: 20
 
 | id | number | title | status | kind |
 | --- | --- | --- | --- | --- |
@@ -21,3 +21,6 @@ Generated entries: 17
 | spc:0614 | 614 | Profile evaluation and boundary resolution | draft | normative |
 | spc:1000 | 1000 | Create-only controller contract | accepted | normative |
 | spc:1001 | 1001 | Metadata ownership and conflict guards | accepted | normative |
+| spc:1002 | 1002 | Adoption repair controls | draft | normative |
+| spc:1003 | 1003 | Certificate reconciliation policy | draft | normative |
+| spc:1004 | 1004 | Certificate issuance safety and error classification | draft | operational |

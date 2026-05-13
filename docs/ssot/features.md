@@ -1,13 +1,25 @@
 # Features
 
-Generated entries: 138
+Generated entries: 153
 
 | id | title | implementation_status | horizon | target_tier | claims | tests |
 | --- | --- | --- | --- | --- | --- | --- |
 | feat:access-list-crud | Owner-scoped ACL CRUD | implemented | current | T2 | clm:owner-scoped-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
+| feat:adopt-metadata-only | Metadata-only adoption | implemented | explicit | T3 | clm:expanded-feature-scope-planning, clm:repair-safe-adoption-controls | tst:expanded-feature-scope-planning, tst:repair-safe-adoption-controls |
+| feat:adopt-resource-family-scope | Resource-family repair scope | implemented | explicit | T3 | clm:expanded-feature-scope-planning, clm:repair-safe-adoption-controls | tst:expanded-feature-scope-planning, tst:repair-safe-adoption-controls |
 | feat:adoption | Explicit adoption of unmanaged resources | implemented | current | T2 | clm:owner-scoped-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
+| feat:apply-structured-certificate-error-output | Structured certificate apply error output | implemented | explicit | T3 | clm:expanded-feature-scope-planning, clm:repair-safe-certificate-issuance-safety | tst:expanded-feature-scope-planning, tst:repair-safe-certificate-issuance-safety |
 | feat:auth-token | Authenticate to NPM API | implemented | current | T2 | clm:create-only-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-client-cli |
 | feat:certificate-crud | Owner-scoped SSL certificate CRUD | implemented | current | T2 | clm:owner-scoped-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
+| feat:certificate-domain-set-reuse-detection | Certificate domain-set reuse detection | implemented | explicit | T3 | clm:expanded-feature-scope-planning, clm:repair-safe-certificate-policy | tst:expanded-feature-scope-planning, tst:repair-safe-certificate-policy |
+| feat:certificate-failure-classification | Structured certificate failure classification | implemented | explicit | T3 | clm:expanded-feature-scope-planning, clm:repair-safe-certificate-issuance-safety | tst:expanded-feature-scope-planning, tst:repair-safe-certificate-issuance-safety |
+| feat:certificate-issuance-cooldown | Certificate issuance cooldown | implemented | explicit | T3 | clm:expanded-feature-scope-planning, clm:repair-safe-certificate-issuance-safety | tst:expanded-feature-scope-planning, tst:repair-safe-certificate-issuance-safety |
+| feat:certificate-issuance-deduplication | Certificate issuance deduplication | implemented | explicit | T3 | clm:expanded-feature-scope-planning, clm:repair-safe-certificate-issuance-safety | tst:expanded-feature-scope-planning, tst:repair-safe-certificate-issuance-safety |
+| feat:certificate-lock-retryable-class | Retryable certificate lock class | implemented | explicit | T3 | clm:expanded-feature-scope-planning, clm:repair-safe-certificate-issuance-safety | tst:expanded-feature-scope-planning, tst:repair-safe-certificate-issuance-safety |
+| feat:certificate-order-stale-class | Stale certificate order class | implemented | explicit | T3 | clm:expanded-feature-scope-planning, clm:repair-safe-certificate-issuance-safety | tst:expanded-feature-scope-planning, tst:repair-safe-certificate-issuance-safety |
+| feat:certificate-policy-mode-create | Certificate policy mode create | implemented | explicit | T3 | clm:expanded-feature-scope-planning, clm:repair-safe-certificate-policy | tst:expanded-feature-scope-planning, tst:repair-safe-certificate-policy |
+| feat:certificate-policy-mode-reuse | Certificate policy mode reuse | implemented | explicit | T3 | clm:expanded-feature-scope-planning, clm:repair-safe-certificate-policy | tst:expanded-feature-scope-planning, tst:repair-safe-certificate-policy |
+| feat:certificate-policy-mode-rotate | Certificate policy mode rotate | implemented | explicit | T3 | clm:expanded-feature-scope-planning, clm:repair-safe-certificate-policy | tst:expanded-feature-scope-planning, tst:repair-safe-certificate-policy |
 | feat:ci-real-npm-coverage-artifact | Real NPM coverage artifact | implemented | explicit | T2 | clm:conformance-release-blocking-live-npm, clm:expanded-feature-scope-planning | tst:conformance-release-blocking-live-npm, tst:expanded-feature-scope-planning |
 | feat:ci-real-npm-scheduled-e2e | Scheduled live NPM gate CI | implemented | explicit | T2 | clm:conformance-release-blocking-live-npm, clm:expanded-feature-scope-planning | tst:conformance-release-blocking-live-npm, tst:expanded-feature-scope-planning |
 | feat:cli-completion | CLI shell completions | implemented | explicit | T2 | clm:cli-operator-certification, clm:expanded-feature-scope-planning | tst:cli-operator-certification, tst:expanded-feature-scope-planning |
@@ -127,11 +139,14 @@ Generated entries: 138
 | feat:ops-rollback-plan | Operational rollback plan | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:operational-hardening-certification | tst:expanded-feature-scope-planning, tst:operational-hardening-certification |
 | feat:ops-state-backup-before-apply | State backup before apply | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:operational-hardening-certification | tst:expanded-feature-scope-planning, tst:operational-hardening-certification |
 | feat:owner-scoped-reconcile | Owner-scoped plan and apply | implemented | current | T2 | clm:owner-scoped-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
+| feat:plan-adoptable-compatible-unmanaged | Adoptable compatible unmanaged planning | implemented | explicit | T3 | clm:expanded-feature-scope-planning, clm:repair-safe-adoption-controls | tst:expanded-feature-scope-planning, tst:repair-safe-adoption-controls |
+| feat:plan-certificate-policy-conflicts | Planned certificate policy conflicts | implemented | explicit | T3 | clm:expanded-feature-scope-planning, clm:repair-safe-certificate-policy | tst:expanded-feature-scope-planning, tst:repair-safe-certificate-policy |
 | feat:plugin-custom-cert-provider | Plugin custom certificate provider | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:plugin-runtime-certification | tst:expanded-feature-scope-planning, tst:plugin-runtime-certification |
 | feat:plugin-custom-resource-kind | Plugin custom resource kind | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:plugin-runtime-certification | tst:expanded-feature-scope-planning, tst:plugin-runtime-certification |
 | feat:plugin-provider-interface | Plugin provider interface | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:plugin-runtime-certification | tst:expanded-feature-scope-planning, tst:plugin-runtime-certification |
 | feat:plugin-runtime-loading | Runtime plugin discovery and diagnostics | implemented | explicit | T2 | clm:plugin-runtime-certification | tst:plugin-runtime-certification |
 | feat:proxy-host-crud | Owner-scoped proxy host CRUD | implemented | current | T2 | clm:owner-scoped-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
+| feat:repair-safe-public-endpoint-workflow | Repair-safe public endpoint workflow | implemented | explicit | T3 | clm:expanded-feature-scope-planning, clm:repair-safe-adoption-controls | tst:expanded-feature-scope-planning, tst:repair-safe-adoption-controls |
 | feat:resource-audit-log | Audit log resource reporting | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:resource-expanded-certification | tst:expanded-feature-scope-planning, tst:resource-expanded-certification |
 | feat:resource-dead-hosts | Dead host resource support | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:resource-expanded-certification | tst:expanded-feature-scope-planning, tst:resource-expanded-certification |
 | feat:resource-redirection-hosts | Redirection host resource support | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:resource-expanded-certification | tst:expanded-feature-scope-planning, tst:resource-expanded-certification |

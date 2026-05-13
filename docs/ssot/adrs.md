@@ -1,6 +1,6 @@
 # ADRs
 
-Generated entries: 17
+Generated entries: 18
 
 | id | number | title | status |
 | --- | --- | --- | --- |
@@ -21,3 +21,4 @@ Generated entries: 17
 | adr:0615 | 615 | Downstream assurance-language ceilings for feature target claim tiers | accepted |
 | adr:1000 | 1000 | Use create-only reconciliation for NPM proxy hosts | accepted |
 | adr:1001 | 1001 | Require npmctl metadata ownership markers | accepted |
+| adr:1002 | 1002 | Repair-safe certificate reconciliation | draft |
