@@ -78,12 +78,18 @@ def test_client_creates_patches_and_deletes_records() -> None:
             FakeResponse(200, {"success": True, "result": [{"id": "zone-1", "name": "example.com"}]}),
             FakeResponse(
                 200,
-                {"success": True, "result": {"id": "rec-1", "name": "www.example.com", "type": "A", "content": "192.0.2.10"}},
+                {
+                    "success": True,
+                    "result": {"id": "rec-1", "name": "www.example.com", "type": "A", "content": "192.0.2.10"},
+                },
             ),
             FakeResponse(200, {"success": True, "result": [{"id": "zone-1", "name": "example.com"}]}),
             FakeResponse(
                 200,
-                {"success": True, "result": {"id": "rec-1", "name": "www.example.com", "type": "A", "content": "192.0.2.11"}},
+                {
+                    "success": True,
+                    "result": {"id": "rec-1", "name": "www.example.com", "type": "A", "content": "192.0.2.11"},
+                },
             ),
             FakeResponse(200, {"success": True, "result": [{"id": "zone-1", "name": "example.com"}]}),
             FakeResponse(200, {"success": True, "result": {"id": "rec-1"}}),
@@ -134,7 +140,11 @@ def test_provider_returns_record_dicts() -> None:
 
         def records(self, zone: str):
             assert zone == "example.com"
-            return (CloudflareRecord.from_mapping({"name": "www.example.com", "type": "CNAME", "content": "target.example.net"}),)
+            return (
+                CloudflareRecord.from_mapping(
+                    {"name": "www.example.com", "type": "CNAME", "content": "target.example.net"}
+                ),
+            )
 
     provider = CloudflareDnsProvider(Client())  # type: ignore[arg-type]
 

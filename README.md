@@ -342,6 +342,7 @@ docker compose -f deploy/npm/compose.ci.yml down
 - [SSL certificates](docs/ssl-certificates.md)
 - [Access lists](docs/access-lists.md)
 - [DNS records](docs/dns.md)
+- [DNS provider packages](docs/dns-providers.md)
 - [Namecheap DNS extension](docs/namecheap.md)
 - [Adoption](docs/adoption.md)
 - [GitHub Actions](docs/github-actions.md)

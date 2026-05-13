@@ -2,48 +2,65 @@
 
 <p align="center"><strong>Cloudflare DNS provider plugin for npmctl</strong></p>
 
-`npmctl-cloudflare` registers a `cloudflare` DNS provider for `npmctl`. It is designed for Cloudflare-hosted zones where operators need provider discovery, DNS diagnostics, and API-backed A and CNAME record workflows beside Nginx Proxy Manager desired state.
+<p align="center">
+  Extend <code>npmctl</code> with Cloudflare-backed DNS record management for declarative workflows, provider discovery, and DNS-aware automation.
+</p>
+
+<p align="center">
+  <a href="https://pypi.org/project/npmctl-cloudflare/"><img src="https://img.shields.io/pypi/v/npmctl-cloudflare.svg" alt="PyPI version"></a>
+  <a href="https://pypi.org/project/npmctl-cloudflare/"><img src="https://img.shields.io/pypi/pyversions/npmctl-cloudflare.svg" alt="Python versions"></a>
+  <a href="https://github.com/groupsum/npmctl/actions/workflows/ci.yml"><img src="https://github.com/groupsum/npmctl/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
+  <a href="https://github.com/groupsum/npmctl/blob/master/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache 2.0 License"></a>
+</p>
+
+<p align="center">
+  <a href="https://hits.sh/github.com/groupsum/npmctl/blob/master/packages/npmctl-cloudflare/README.md/"><img src="https://hits.sh/github.com/groupsum/npmctl/blob/master/packages/npmctl-cloudflare/README.md.svg?label=npmctl-cloudflare%20package%20hits" alt="npmctl-cloudflare package hits"></a>
+  <a href="https://pepy.tech/projects/npmctl-cloudflare"><img src="https://static.pepy.tech/badge/npmctl-cloudflare" alt="npmctl-cloudflare downloads"></a>
+</p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/groupsum/npmctl/master/docs/images/marketing/npmctl-architecture-infographic.png" alt="npmctl architecture infographic">
+</p>
+
+`npmctl-cloudflare` is the Cloudflare DNS provider package for `npmctl`. Install it when you want desired-state DNS records or DNS diagnostics to resolve through Cloudflare instead of using only the base `npmctl` package.
 
 ## Supported Python Versions
 
 `npmctl-cloudflare` supports Python `3.10`, `3.11`, `3.12`, `3.13`, and `3.14`.
 
-## Package Metadata
+## Why npmctl-cloudflare
 
-- Trove lifecycle classifier: `Development Status :: 1 - Planning`
-- Entry point group: `npmctl.dns_providers`
-- Entry point name: `cloudflare`
-- Runtime dependency: `requests`
-- Credential source: environment variables
+- Adds Cloudflare DNS provider discovery to `npmctl`
+- Lets DNS workflows live beside proxy and certificate desired state
+- Keeps Cloudflare API tokens out of the core CLI package
+- Supports operator diagnostics through `npmctl dns doctor`
+- Provides client helpers for Cloudflare A and CNAME record workflows
 
-## Cloudflare API Surface
+## FAQ
 
-The provider follows the current Cloudflare DNS Records API:
+### What is npmctl-cloudflare?
 
-- `GET /zones`: discover zones available to the token.
-- `GET /zones/{zone_id}/dns_records`: list DNS records in one zone.
-- `POST /zones/{zone_id}/dns_records`: create A, CNAME, and other supported records.
-- `PUT /zones/{zone_id}/dns_records/{dns_record_id}`: overwrite an existing record.
-- `PATCH /zones/{zone_id}/dns_records/{dns_record_id}`: partially update an existing record.
-- `DELETE /zones/{zone_id}/dns_records/{dns_record_id}`: delete a record.
+**Answer:** `npmctl-cloudflare` is a plugin package that teaches `npmctl` how to talk to the Cloudflare DNS Records API for DNS record operations and DNS provider diagnostics.
 
-Cloudflare accepts scoped API tokens. For read-only diagnostics, grant `Zone:Read` and `DNS:Read`. For create, update, or delete operations, grant `DNS:Write` for the target zone.
+### When do I need npmctl-cloudflare?
 
-Cloudflare DNS constraints are enforced by the API. Notably, A and AAAA records cannot coexist with a CNAME on the same name, and NS records cannot coexist with other record types on the same name.
+**Answer:** You need `npmctl-cloudflare` when your `npmctl` workflow includes Cloudflare-managed DNS records or when you want `npmctl` to validate Cloudflare DNS connectivity and credentials.
 
-## Configure
+### Does npmctl-cloudflare work without npmctl?
 
-```bash
-export CLOUDFLARE_API_TOKEN=your-cloudflare-api-token
-```
+**Answer:** No. `npmctl-cloudflare` is an extension package for `npmctl`, not a standalone CLI.
 
-Optional for tests, proxies, or non-default API endpoints:
+### Can npmctl-cloudflare set A and CNAME records?
 
-```bash
-export CLOUDFLARE_API_BASE_URL=https://api.cloudflare.com/client/v4
-```
+**Answer:** Yes. The Cloudflare DNS Records API supports A and CNAME records, and this package exposes helpers for create, replace, patch, and delete operations.
+
+### What credentials are required?
+
+**Answer:** Cloudflare API access requires `CLOUDFLARE_API_TOKEN`. For diagnostics, grant zone read and DNS read access. For record changes, grant DNS write access to the target zone.
 
 ## Install
+
+Install the base CLI and the Cloudflare provider package together:
 
 ```bash
 pipx install npmctl
@@ -56,18 +73,61 @@ With `uv`:
 ```bash
 uv tool install npmctl
 uv tool install npmctl-cloudflare
-npmctl dns doctor --provider cloudflare
+npmctl plugins list
 ```
 
-## Verify Discovery
+Inside a virtual environment:
+
+```bash
+python -m venv .venv
+. .venv/bin/activate
+python -m pip install npmctl npmctl-cloudflare
+npmctl plugins list
+```
+
+## Configure Cloudflare
+
+Set the required environment variable:
+
+```bash
+export CLOUDFLARE_API_TOKEN=your-cloudflare-api-token
+```
+
+Optional for tests, proxies, or alternate endpoints:
+
+```bash
+export CLOUDFLARE_API_BASE_URL=https://api.cloudflare.com/client/v4
+```
+
+## Verify Plugin Discovery
+
+Check that `npmctl` can discover the provider:
 
 ```bash
 npmctl plugins list
-npmctl dns providers
 npmctl dns doctor --provider cloudflare
+```
+
+## Minimal DNS Workflow
+
+Once the provider is installed and configured, `npmctl` can validate or diagnose Cloudflare-backed DNS behavior through the base CLI:
+
+```bash
+npmctl dns providers
 npmctl dns zones --provider cloudflare
 npmctl dns records --provider cloudflare --zone example.com
 ```
+
+## Cloudflare API Surface
+
+The provider follows the Cloudflare DNS Records API:
+
+- `GET /zones`: discover zones available to the token.
+- `GET /zones/{zone_id}/dns_records`: list DNS records in one zone.
+- `POST /zones/{zone_id}/dns_records`: create A, CNAME, and other supported records.
+- `PUT /zones/{zone_id}/dns_records/{dns_record_id}`: overwrite an existing record.
+- `PATCH /zones/{zone_id}/dns_records/{dns_record_id}`: partially update an existing record.
+- `DELETE /zones/{zone_id}/dns_records/{dns_record_id}`: delete a record.
 
 ## Programmatic Record Operations
 
@@ -93,4 +153,11 @@ client.create_record("example.com", type="CNAME", name="app", value="target.exam
 - Only operate on zones that are authoritative in Cloudflare.
 - Use least-privilege API tokens scoped to the intended zone.
 - Keep `CLOUDFLARE_API_TOKEN` out of desired-state files and logs.
+- Cloudflare prevents CNAME records from coexisting with A or AAAA records on the same name.
 - Use npmctl owner metadata for desired DNS records so future apply support can remain owner-scoped.
+
+## More Documentation
+
+- Related PyPI package: https://pypi.org/project/npmctl/
+- Repository: https://github.com/groupsum/npmctl
+- DNS provider docs: https://github.com/groupsum/npmctl/tree/master/docs/dns-providers.md

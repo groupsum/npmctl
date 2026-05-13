@@ -1,6 +1,6 @@
 # Features
 
-Generated entries: 153
+Generated entries: 157
 
 | id | title | implementation_status | horizon | target_tier | claims | tests |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -29,6 +29,7 @@ Generated entries: 153
 | feat:cli-plan-output-schema-validation | CLI plan output schema validation | implemented | explicit | T2 | clm:cli-operator-certification, clm:expanded-feature-scope-planning | tst:cli-operator-certification, tst:expanded-feature-scope-planning |
 | feat:cli-surface | Operator CLI surface | implemented | current | T2 | clm:create-only-integrity | tst:unit-client-cli |
 | feat:cli-version-json | CLI JSON version output | implemented | explicit | T2 | clm:cli-operator-certification, clm:expanded-feature-scope-planning | tst:cli-operator-certification, tst:expanded-feature-scope-planning |
+| feat:cloudflare-dns-provider | Cloudflare DNS provider package | implemented | current | T2 | clm:plugin-runtime-certification | tst:plugin-runtime-certification |
 | feat:compliance-dependency-vulnerability-gate | Dependency vulnerability compliance gate | implemented | explicit | T2 | clm:compliance-real-oss-release, clm:expanded-feature-scope-planning | tst:compliance-real-oss-release, tst:expanded-feature-scope-planning |
 | feat:compliance-owner-scope-safety-profile | Owner scope safety compliance profile | implemented | explicit | T2 | clm:compliance-real-oss-release, clm:expanded-feature-scope-planning | tst:compliance-real-oss-release, tst:expanded-feature-scope-planning |
 | feat:compliance-provenance-attestation | Release provenance attestation | implemented | explicit | T2 | clm:compliance-real-oss-release, clm:expanded-feature-scope-planning | tst:compliance-real-oss-release, tst:expanded-feature-scope-planning |
@@ -54,6 +55,7 @@ Generated entries: 153
 | feat:dev-real-e2e-coverage-measurement | Live NPM Gate coverage measurement | implemented | explicit | T2 | clm:conformance-release-blocking-live-npm, clm:expanded-feature-scope-planning | tst:conformance-release-blocking-live-npm, tst:expanded-feature-scope-planning |
 | feat:dev-schema-fixture-roundtrip | Schema fixture roundtrip gate | implemented | explicit | T2 | clm:development-gate-certification, clm:expanded-feature-scope-planning | tst:development-gate-certification, tst:expanded-feature-scope-planning |
 | feat:dev-type-checking | Development type checking gate | implemented | explicit | T2 | clm:development-gate-certification, clm:expanded-feature-scope-planning | tst:development-gate-certification, tst:expanded-feature-scope-planning |
+| feat:digitalocean-dns-provider | DigitalOcean DNS provider package | implemented | current | T2 | clm:plugin-runtime-certification | tst:plugin-runtime-certification |
 | feat:discover-proxy-hosts | Discover current proxy hosts | implemented | current | T2 | clm:create-only-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-client-cli |
 | feat:dns-provider-cli | DNS provider CLI diagnostics | implemented | current | T2 | clm:cli-operator-certification | tst:cli-operator-certification |
 | feat:dns-record-schema-v2 | DNS record schema v2 | implemented | current | T2 | clm:owner-scoped-integrity | tst:unit-migrations |
@@ -130,6 +132,7 @@ Generated entries: 153
 | feat:gap-real-npm-websockets | Real NPM WebSocket assertions | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-real-npm-websockets |
 | feat:gap-workflow-semantics | GitHub workflow semantics coverage | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-workflow-semantics |
 | feat:github-actions-gates | Gated GitHub Actions with live NPM gate | implemented | current | T2 | clm:owner-scoped-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
+| feat:godaddy-dns-provider | GoDaddy DNS provider package | implemented | current | T2 | clm:plugin-runtime-certification | tst:plugin-runtime-certification |
 | feat:metadata-ownership | Validate metadata ownership | implemented | current | T2 | clm:metadata-conflict-guard | tst:integration-fake-npm, tst:unit-planner, tst:unit-validation |
 | feat:namecheap-dns-provider | Namecheap DNS provider package | implemented | current | T2 | clm:plugin-runtime-certification | tst:plugin-runtime-certification |
 | feat:ops-apply-transaction-report | Apply transaction report | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:operational-hardening-certification | tst:expanded-feature-scope-planning, tst:operational-hardening-certification |
@@ -153,6 +156,7 @@ Generated entries: 153
 | feat:resource-settings | Settings resource support | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:resource-expanded-certification | tst:expanded-feature-scope-planning, tst:resource-expanded-certification |
 | feat:resource-streams | Stream resource support | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:resource-expanded-certification | tst:expanded-feature-scope-planning, tst:resource-expanded-certification |
 | feat:resource-users | User resource support | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:resource-expanded-certification | tst:expanded-feature-scope-planning, tst:resource-expanded-certification |
+| feat:route53-dns-provider | Route 53 DNS provider package | implemented | current | T2 | clm:plugin-runtime-certification | tst:plugin-runtime-certification |
 | feat:schema-capabilities | OpenAPI capability detection | implemented | current | T2 | clm:owner-scoped-integrity, clm:schema-gated-api | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
 | feat:schema-migrations | Desired-state schema migrations | implemented | current | T2 | clm:owner-scoped-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
 | feat:ssot-feature-family-proof-closure | Feature-family SSOT proof closure | implemented | explicit | T2 | clm:development-gate-certification | tst:development-gate-certification |

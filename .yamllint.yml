@@ -10,7 +10,10 @@ rules:
     min-spaces-from-content: 1
 ignore: |
   .venv/
+  .tmp/
+  .uv-cache/
   dist/
+  build/
   .ssot/adr/
   .ssot/specs/
   .ssot/schemas/

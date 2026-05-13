@@ -1,6 +1,6 @@
 # SSOT index
 
-Features: 153
+Features: 157
 Claims: 17
 Tests: 91
 Evidence: 19

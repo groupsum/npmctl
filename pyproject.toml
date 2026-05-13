@@ -76,7 +76,14 @@ testpaths = [
   "packages/npmctl-namecheap/tests",
   "packages/npmctl-route53/tests",
 ]
-pythonpath = ["packages/npmctl/src"]
+pythonpath = [
+  "packages/npmctl/src",
+  "packages/npmctl-cloudflare/src",
+  "packages/npmctl-digitalocean/src",
+  "packages/npmctl-godaddy/src",
+  "packages/npmctl-namecheap/src",
+  "packages/npmctl-route53/src",
+]
 markers = [
   "integration: integration tests using a local fake NPM API server",
   "npm: tests against a real Nginx Proxy Manager instance; opt in with NPMCTL_REAL_NPM=1",
