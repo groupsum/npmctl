@@ -10,15 +10,19 @@
   <a href="https://pypi.org/project/npmctl-namecheap/"><img src="https://img.shields.io/pypi/v/npmctl-namecheap.svg" alt="PyPI version"></a>
   <a href="https://pypi.org/project/npmctl-namecheap/"><img src="https://img.shields.io/pypi/pyversions/npmctl-namecheap.svg" alt="Python versions"></a>
   <a href="https://github.com/groupsum/npmctl/actions/workflows/ci.yml"><img src="https://github.com/groupsum/npmctl/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
-  <a href="https://github.com/groupsum/npmctl/blob/master/LICENSE"><img src="https://img.shields.io/github/license/groupsum/npmctl" alt="License"></a>
+  <a href="https://github.com/groupsum/npmctl/blob/master/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache 2.0 License"></a>
 </p>
 
 <p align="center">
-  <a href="https://hits.sh/github.com/groupsum/npmctl/blob/master/packages/npmctl-namecheap/README.md/"><img src="https://hits.sh/github.com/groupsum/npmctl/blob/master/packages/npmctl-namecheap/README.md.svg?label=namecheap%20hits" alt="npmctl-namecheap package README hits"></a>
+  <a href="https://hits.sh/github.com/groupsum/npmctl/blob/master/packages/npmctl-namecheap/README.md/"><img src="https://hits.sh/github.com/groupsum/npmctl/blob/master/packages/npmctl-namecheap/README.md.svg?label=npmctl-namecheap%20package%20hits" alt="npmctl-namecheap package hits"></a>
   <a href="https://pepy.tech/projects/npmctl-namecheap"><img src="https://static.pepy.tech/badge/npmctl-namecheap" alt="npmctl-namecheap downloads"></a>
 </p>
 
 `npmctl-namecheap` is the Namecheap DNS provider package for `npmctl`. Install it when you want desired-state DNS records or DNS diagnostics to resolve through Namecheap instead of using only the base `npmctl` package.
+
+## Supported Python Versions
+
+`npmctl-namecheap` supports Python `3.10`, `3.11`, `3.12`, `3.13`, and `3.14`.
 
 ## Why npmctl-namecheap
 
@@ -108,5 +112,6 @@ npmctl dns doctor --provider namecheap
 
 ## More Documentation
 
+- Related PyPI package: https://pypi.org/project/npmctl/
 - Repository: https://github.com/groupsum/npmctl
 - Provider docs: https://github.com/groupsum/npmctl/tree/master/docs/namecheap.md

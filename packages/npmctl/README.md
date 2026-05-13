@@ -11,15 +11,19 @@
   <a href="https://pypi.org/project/npmctl/"><img src="https://img.shields.io/pypi/pyversions/npmctl.svg" alt="Python versions"></a>
   <a href="https://github.com/groupsum/npmctl/actions/workflows/ci.yml"><img src="https://github.com/groupsum/npmctl/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/groupsum/npmctl/actions/workflows/live-npm-gate.yml"><img src="https://github.com/groupsum/npmctl/actions/workflows/live-npm-gate.yml/badge.svg?branch=master" alt="Live NPM Gate"></a>
-  <a href="https://github.com/groupsum/npmctl/blob/master/LICENSE"><img src="https://img.shields.io/github/license/groupsum/npmctl" alt="License"></a>
+  <a href="https://github.com/groupsum/npmctl/blob/master/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache 2.0 License"></a>
 </p>
 
 <p align="center">
-  <a href="https://hits.sh/github.com/groupsum/npmctl/blob/master/packages/npmctl/README.md/"><img src="https://hits.sh/github.com/groupsum/npmctl/blob/master/packages/npmctl/README.md.svg?label=npmctl%20hits" alt="npmctl package README hits"></a>
+  <a href="https://hits.sh/github.com/groupsum/npmctl/blob/master/packages/npmctl/README.md/"><img src="https://hits.sh/github.com/groupsum/npmctl/blob/master/packages/npmctl/README.md.svg?label=npmctl%20package%20hits" alt="npmctl package hits"></a>
   <a href="https://pepy.tech/projects/npmctl"><img src="https://static.pepy.tech/badge/npmctl" alt="npmctl downloads"></a>
 </p>
 
 `npmctl` is the Python package and console script for declarative, owner-scoped Nginx Proxy Manager automation. It manages proxy hosts, certificates, access lists, redirection hosts, dead hosts, streams, users, settings, and provider-backed DNS records without silently mutating foreign-owned resources.
+
+## Supported Python Versions
+
+`npmctl` supports Python `3.10`, `3.11`, `3.12`, `3.13`, and `3.14`.
 
 ## Why npmctl
 
@@ -190,6 +194,7 @@ proxy_hosts:
 
 ## More Documentation
 
+- Related PyPI package: https://pypi.org/project/npmctl-namecheap/
 - Repository: https://github.com/groupsum/npmctl
 - Examples: https://github.com/groupsum/npmctl/tree/master/examples/desired-state
 - Docs: https://github.com/groupsum/npmctl/tree/master/docs

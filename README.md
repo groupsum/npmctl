@@ -12,11 +12,11 @@
   <a href="https://github.com/groupsum/npmctl/actions/workflows/ci.yml"><img src="https://github.com/groupsum/npmctl/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/groupsum/npmctl/actions/workflows/python-matrix.yml"><img src="https://github.com/groupsum/npmctl/actions/workflows/python-matrix.yml/badge.svg?branch=master" alt="Python Matrix"></a>
   <a href="https://github.com/groupsum/npmctl/actions/workflows/live-npm-gate.yml"><img src="https://github.com/groupsum/npmctl/actions/workflows/live-npm-gate.yml/badge.svg?branch=master" alt="Live NPM Gate"></a>
-  <a href="https://github.com/groupsum/npmctl/blob/master/LICENSE"><img src="https://img.shields.io/github/license/groupsum/npmctl" alt="License"></a>
+  <a href="https://github.com/groupsum/npmctl/blob/master/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache 2.0 License"></a>
 </p>
 
 <p align="center">
-  <a href="https://hits.sh/github.com/groupsum/npmctl/blob/master/README.md/"><img src="https://hits.sh/github.com/groupsum/npmctl/blob/master/README.md.svg?label=repo%20hits" alt="Top-level README hits"></a>
+  <a href="https://hits.sh/github.com/groupsum/npmctl/blob/master/README.md/"><img src="https://hits.sh/github.com/groupsum/npmctl/blob/master/README.md.svg?label=npmctl%20repository%20hits" alt="npmctl repository hits"></a>
   <a href="https://pepy.tech/projects/npmctl"><img src="https://static.pepy.tech/badge/npmctl" alt="npmctl downloads"></a>
   <a href="https://pepy.tech/projects/npmctl-namecheap"><img src="https://static.pepy.tech/badge/npmctl-namecheap" alt="npmctl-namecheap downloads"></a>
 </p>
