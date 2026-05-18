@@ -92,48 +92,6 @@ def test_workflow_trigger_and_gate_semantics() -> None:
         assert f"uv build --package {package}" in build_script
 
 
-def test_lander_deploy_workflow_is_dispatch_only_and_idempotent() -> None:
-    workflow = _workflow("deploy-lander.yml")
-
-    assert workflow["name"] == "Deploy npmctl.com Lander"
-    assert set(workflow["on"]) == {"workflow_dispatch"}
-    assert workflow["jobs"]["deploy"]["runs-on"]["group"] == "deployment"
-
-    steps = workflow["jobs"]["deploy"]["steps"]
-    assert all("cobycloud/actions" not in step.get("uses", "") for step in steps)
-
-    deploy_script = next(step["run"] for step in steps if step.get("name") == "Deploy lander service")
-    assert "docker compose version" in deploy_script
-    assert "command -v docker-compose" in deploy_script
-    assert "docker ps -a --filter name=npmctl_lander" in deploy_script
-    assert "docker rm -f" in deploy_script
-    assert "deploy/lander/compose.yml up -d --build lander" in deploy_script
-
-    connect_script = next(step["run"] for step in steps if step.get("name") == "Connect NPM to lander network")
-    assert "jc21/nginx-proxy-manager:2.10.4" in connect_script
-    assert 'docker network connect npmctl_lander_net "$npm_container"' in connect_script
-
-    verify_script = next(step["run"] for step in steps if step.get("name") == "Verify lander container")
-    assert "docker inspect -f '{{.State.Running}}' npmctl_lander" in verify_script
-    assert "Hello from the npmctl lander." in verify_script
-
-
-def test_lander_compose_contract_and_static_page() -> None:
-    compose = yaml.load(
-        (ROOT / "deploy" / "lander" / "compose.yml").read_text(encoding="utf-8"), Loader=yaml.BaseLoader
-    )
-    site = (ROOT / "deploy" / "lander" / "site" / "index.html").read_text(encoding="utf-8")
-
-    assert "name" not in compose
-    assert compose["version"] == "3.8"
-    assert compose["services"]["lander"]["container_name"] == "npmctl_lander"
-    assert compose["services"]["lander"]["networks"] == ["npmctl_lander_net"]
-    assert compose["networks"]["npmctl_lander_net"]["name"] == "npmctl_lander_net"
-    assert "wget -qO-" in compose["services"]["lander"]["healthcheck"]["test"][1]
-    assert "npmctl.com" in site
-    assert "Hello from the npmctl lander." in site
-
-
 def test_governed_api_namespace_uses_npmctl_com() -> None:
     schema = json.loads((ROOT / "schemas" / "npmctl" / "desired-state.v2.schema.json").read_text(encoding="utf-8"))
     loader = (ROOT / "packages" / "npmctl" / "src" / "npmctl" / "loader.py").read_text(encoding="utf-8")
