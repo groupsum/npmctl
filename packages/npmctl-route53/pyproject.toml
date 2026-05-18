@@ -1,6 +1,6 @@
 [project]
 name = "npmctl-route53"
-version = "0.3.7"
+version = "0.3.8"
 description = "AWS Route 53 DNS provider extension for npmctl."
 readme = "README.md"
 requires-python = ">=3.10,<3.15"
