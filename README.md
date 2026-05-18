@@ -22,7 +22,7 @@
 </p>
 
 <p align="center">
-  <img src="https://github.com/groupsum/npmctl/raw/96860e920ba7a73b1e4f33907798c7fa8f75bc97/docs/images/marketing/npmctl-architecture-infographic.png?raw=1" alt="npmctl architecture infographic">
+  <img src="https://raw.githubusercontent.com/groupsum/npmctl/master/docs/images/marketing/npmctl-architecture-infographic.png" alt="npmctl architecture infographic">
 </p>
 
 `npmctl` is an owner-scoped GitOps controller for Nginx Proxy Manager. It validates desired-state YAML, plans safe changes against a live NPM API, applies clean plans, and adopts unmanaged resources only when explicitly requested.
