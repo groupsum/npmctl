@@ -1,6 +1,6 @@
 # ADRs
 
-Generated entries: 18
+Generated entries: 20
 
 | id | number | title | status |
 | --- | --- | --- | --- |
@@ -22,3 +22,5 @@ Generated entries: 18
 | adr:1000 | 1000 | Use create-only reconciliation for NPM proxy hosts | accepted |
 | adr:1001 | 1001 | Require npmctl metadata ownership markers | accepted |
 | adr:1002 | 1002 | Repair-safe certificate reconciliation | draft |
+| adr:1003 | 1003 | Provider-backed DNS reconciliation is a first-class apply surface | draft |
+| adr:1004 | 1004 | DNS record ownership and delete semantics for registrar APIs | draft |

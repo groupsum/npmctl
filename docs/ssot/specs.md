@@ -1,6 +1,6 @@
 # Specs
 
-Generated entries: 20
+Generated entries: 22
 
 | id | number | title | status | kind |
 | --- | --- | --- | --- | --- |
@@ -24,3 +24,5 @@ Generated entries: 20
 | spc:1002 | 1002 | Adoption repair controls | draft | normative |
 | spc:1003 | 1003 | Certificate reconciliation policy | draft | normative |
 | spc:1004 | 1004 | Certificate issuance safety and error classification | draft | operational |
+| spc:1005 | 1005 | DNS reconciliation and provider write contract | draft | normative |
+| spc:1006 | 1006 | Namecheap setHosts adapter contract | draft | normative |

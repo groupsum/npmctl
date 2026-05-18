@@ -1,6 +1,6 @@
 # Features
 
-Generated entries: 157
+Generated entries: 165
 
 | id | title | implementation_status | horizon | target_tier | claims | tests |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -57,7 +57,12 @@ Generated entries: 157
 | feat:dev-type-checking | Development type checking gate | implemented | explicit | T2 | clm:development-gate-certification, clm:expanded-feature-scope-planning | tst:development-gate-certification, tst:expanded-feature-scope-planning |
 | feat:digitalocean-dns-provider | DigitalOcean DNS provider package | implemented | current | T2 | clm:plugin-runtime-certification | tst:plugin-runtime-certification |
 | feat:discover-proxy-hosts | Discover current proxy hosts | implemented | current | T2 | clm:create-only-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-client-cli |
+| feat:dns-mutation-reporting | DNS mutation reporting | implemented | current | T2 | clm:owner-scoped-integrity | tst:dns-mixed-npm-and-dns-plan |
+| feat:dns-owner-scoped-record-prune | Owner-scoped DNS record pruning | implemented | current | T2 | clm:owner-scoped-integrity | tst:dns-owner-scoped-record-prune |
 | feat:dns-provider-cli | DNS provider CLI diagnostics | implemented | current | T2 | clm:cli-operator-certification | tst:cli-operator-certification |
+| feat:dns-provider-write-contract | DNS provider write contract | implemented | current | T2 | clm:plugin-runtime-certification | tst:dns-readonly-provider-apply-fails |
+| feat:dns-readonly-provider-fail-closed | Read-only DNS providers fail apply | implemented | current | T2 | clm:plugin-runtime-certification | tst:dns-readonly-provider-apply-fails |
+| feat:dns-reconciliation-plan-apply | DNS records participate in plan and apply | implemented | current | T2 | clm:owner-scoped-integrity | tst:dns-planner-record-operations, tst:dns-mixed-npm-and-dns-plan |
 | feat:dns-record-schema-v2 | DNS record schema v2 | implemented | current | T2 | clm:owner-scoped-integrity | tst:unit-migrations |
 | feat:extension-resource-contract-api | Extension resource contract API | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:plugin-runtime-certification | tst:expanded-feature-scope-planning, tst:plugin-runtime-certification |
 | feat:gap-acl-ref-negative | Access-list reference negative coverage | implemented | current | T2 | clm:test-coverage-gap-plan | tst:gap-acl-ref-negative |
@@ -134,7 +139,10 @@ Generated entries: 157
 | feat:github-actions-gates | Gated GitHub Actions with live NPM gate | implemented | current | T2 | clm:owner-scoped-integrity | tst:e2e-real-npm, tst:integration-fake-npm, tst:unit-planner |
 | feat:godaddy-dns-provider | GoDaddy DNS provider package | implemented | current | T2 | clm:plugin-runtime-certification | tst:plugin-runtime-certification |
 | feat:metadata-ownership | Validate metadata ownership | implemented | current | T2 | clm:metadata-conflict-guard | tst:integration-fake-npm, tst:unit-planner, tst:unit-validation |
+| feat:namecheap-dns-env-validation | Namecheap DNS apply environment validation | implemented | current | T2 | clm:plugin-runtime-certification | tst:namecheap-client-ip-required, tst:namecheap-api-error-redaction |
 | feat:namecheap-dns-provider | Namecheap DNS provider package | implemented | current | T2 | clm:plugin-runtime-certification | tst:plugin-runtime-certification |
+| feat:namecheap-dns-sethosts-apply | Namecheap setHosts apply | implemented | current | T2 | clm:plugin-runtime-certification | tst:namecheap-sethosts-a-cname-payload, tst:namecheap-post-apply-record-readback |
+| feat:namecheap-dns-unmanaged-preservation | Namecheap unmanaged record preservation | implemented | current | T2 | clm:owner-scoped-integrity, clm:plugin-runtime-certification | tst:namecheap-preserve-unmanaged-records, tst:namecheap-remove-stale-owned-records |
 | feat:ops-apply-transaction-report | Apply transaction report | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:operational-hardening-certification | tst:expanded-feature-scope-planning, tst:operational-hardening-certification |
 | feat:ops-audit-log-output | Operational audit log output | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:operational-hardening-certification | tst:expanded-feature-scope-planning, tst:operational-hardening-certification |
 | feat:ops-containerized-cli-image | Containerized CLI image | implemented | explicit | T2 | clm:expanded-feature-scope-planning, clm:operational-hardening-certification | tst:expanded-feature-scope-planning, tst:operational-hardening-certification |
