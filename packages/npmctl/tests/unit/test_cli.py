@@ -155,6 +155,18 @@ def test_dns_cli_rejects_unknown_provider(monkeypatch) -> None:
     assert main(["dns", "doctor", "--provider", "missing"]) == EXIT_USAGE_OR_VALIDATION
 
 
+def test_npm_only_plan_does_not_discover_dns_providers(monkeypatch, fake_npm_server, desired_file: Path) -> None:
+    _, base_url = fake_npm_server
+
+    def fail_discover():
+        raise AssertionError("DNS provider discovery should be skipped without dns_records")
+
+    monkeypatch.setattr("npmctl.cli.PluginRegistry.discover", fail_discover)
+    common = ["--base-url", base_url, "--identity", "admin@example.com", "--secret", "changeme"]
+
+    assert main([*common, "plan", str(desired_file), "--owner", "workload-a"]) == EXIT_OK
+
+
 def test_plan_and_apply_include_dns_operations(monkeypatch, fake_npm_server, tmp_path: Path, capsys) -> None:
     _, base_url = fake_npm_server
     desired = tmp_path / "desired.yaml"

@@ -371,7 +371,7 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
             include_certificates=capabilities.certificates.list,
             include_access_lists=capabilities.access_lists.list,
         )
-        registry = PluginRegistry.discover()
+        dns_providers = PluginRegistry.discover().dns_providers if desired.dns_records else {}
         options = PlannerOptions(
             owner=args.owner,
             allow_updates=not args.no_updates,
@@ -386,7 +386,7 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
         plan = compute_plan(desired=desired, existing=existing, capabilities=capabilities, options=options)
         dns_plan = compute_dns_plan(
             desired.dns_records,
-            registry.dns_providers,
+            dns_providers,
             owner=args.owner,
             prune_owned=args.prune_owned,
         )
@@ -411,7 +411,7 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
         if getattr(args, "backup_dir", None):
             write_state_backup(args.backup_dir, existing)
         result = ApplyEngine(client=client, capabilities=capabilities, existing_state=existing).apply(plan)
-        dns_result = apply_dns_plan(dns_plan, registry.dns_providers)
+        dns_result = apply_dns_plan(dns_plan, dns_providers)
         payload = transaction_report(plan, result, dns_plan=dns_plan, dns_apply_result=dns_result)
         if getattr(args, "report", None):
             write_json(args.report, payload)
