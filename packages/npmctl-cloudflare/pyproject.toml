@@ -1,6 +1,6 @@
 [project]
 name = "npmctl-cloudflare"
-version = "0.3.6"
+version = "0.3.7"
 description = "Cloudflare DNS provider extension for npmctl."
 readme = "README.md"
 requires-python = ">=3.10,<3.15"
