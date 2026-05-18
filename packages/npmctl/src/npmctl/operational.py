@@ -63,11 +63,21 @@ def rollback_plan(plan: Plan) -> dict[str, Any]:
     return {"generated_at": utc_now(), "steps": steps}
 
 
-def transaction_report(plan: Plan, apply_result: Any | None = None) -> dict[str, Any]:
+def transaction_report(
+    plan: Plan,
+    apply_result: Any | None = None,
+    *,
+    dns_plan: Any | None = None,
+    dns_apply_result: Any | None = None,
+) -> dict[str, Any]:
     payload = plan.to_dict()
     payload["generated_at"] = utc_now()
     if apply_result is not None:
         payload["apply"] = apply_result.to_dict()
+    if dns_plan is not None:
+        payload["dns"] = dns_plan.to_dict()
+    if dns_apply_result is not None:
+        payload["dns_apply"] = dns_apply_result.to_dict()
     return payload
 
 

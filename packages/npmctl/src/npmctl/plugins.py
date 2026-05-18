@@ -34,7 +34,7 @@ class CertificateProvider(Protocol):
 
 
 class DnsProvider(Protocol):
-    """Provider contract for DNS zone and record inspection."""
+    """Provider contract for DNS zone, record inspection, and reconciliation."""
 
     name: str
 
@@ -43,6 +43,9 @@ class DnsProvider(Protocol):
 
     def records(self, zone: str) -> tuple[dict[str, Any], ...]:
         """Return DNS records for one zone."""
+
+    def apply_records(self, zone: str, records: tuple[dict[str, Any], ...]) -> None:
+        """Replace provider records for one zone with the supplied reconciled set."""
 
 
 @dataclass(slots=True)

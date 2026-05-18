@@ -354,6 +354,7 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
 
     if args.command in {"plan", "apply", "adopt", "drift"}:
         from npmctl.apply import ApplyEngine
+        from npmctl.dns import apply_dns_plan, compute_dns_plan
         from npmctl.operational import (
             drift_report,
             rollback_plan,
@@ -370,6 +371,7 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
             include_certificates=capabilities.certificates.list,
             include_access_lists=capabilities.access_lists.list,
         )
+        registry = PluginRegistry.discover()
         options = PlannerOptions(
             owner=args.owner,
             allow_updates=not args.no_updates,
@@ -382,33 +384,45 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
             certificate_mode=_default_certificate_mode(args),
         )
         plan = compute_plan(desired=desired, existing=existing, capabilities=capabilities, options=options)
+        dns_plan = compute_dns_plan(
+            desired.dns_records,
+            registry.dns_providers,
+            owner=args.owner,
+            prune_owned=args.prune_owned,
+        )
         if args.command == "drift":
             payload = drift_report(plan)
+            payload["dns"] = dns_plan.to_dict()
+            payload["ok"] = bool(payload["ok"] and dns_plan.ok)
             write_output(args.output, payload, json.dumps(payload, indent=2, sort_keys=True))
             return EXIT_OK if payload["ok"] else EXIT_CONFLICT
-        plan_payload = plan.to_dict()
+        plan_payload = _combined_plan_payload(plan, dns_plan)
         if getattr(args, "validate_output", False):
             try:
                 validate_plan_output(plan_payload)
             except ValueError as exc:
                 raise ValidationError(str(exc)) from exc
         if args.command == "plan" or getattr(args, "dry_run", False):
-            write_output(args.output, plan_payload, format_plan_text(plan))
-            return EXIT_OK if plan.ok else EXIT_CONFLICT
-        if not plan.ok:
-            write_output(args.output, plan_payload, format_plan_text(plan))
+            write_output(args.output, plan_payload, _format_combined_plan_text(plan, dns_plan))
+            return EXIT_OK if plan.ok and dns_plan.ok else EXIT_CONFLICT
+        if not plan.ok or not dns_plan.ok:
+            write_output(args.output, plan_payload, _format_combined_plan_text(plan, dns_plan))
             return EXIT_CONFLICT
         if getattr(args, "backup_dir", None):
             write_state_backup(args.backup_dir, existing)
         result = ApplyEngine(client=client, capabilities=capabilities, existing_state=existing).apply(plan)
-        payload = transaction_report(plan, result)
+        dns_result = apply_dns_plan(dns_plan, registry.dns_providers)
+        payload = transaction_report(plan, result, dns_plan=dns_plan, dns_apply_result=dns_result)
         if getattr(args, "report", None):
             write_json(args.report, payload)
         if getattr(args, "rollback_plan", None):
             write_json(args.rollback_plan, rollback_plan(plan))
         if getattr(args, "audit_log_path", None):
             write_json(args.audit_log_path, {"ok": True, "operation": "apply", "summary": payload["summary"]})
-        text = format_plan_text(plan) + f"\napplied: true\nmutations: {len(result.mutations)}"
+        text = (
+            _format_combined_plan_text(plan, dns_plan)
+            + f"\napplied: true\nmutations: {len(result.mutations)}\ndns mutations: {len(dns_result.mutations)}"
+        )
         write_output(args.output, payload, text)
         return EXIT_OK
 
@@ -470,6 +484,35 @@ def _dns_command(args: argparse.Namespace) -> int:
         write_output(args.output, payload, json.dumps(payload, indent=2, sort_keys=True))
         return EXIT_OK
     raise ValidationError(f"unsupported dns command: {args.dns_command}")  # pragma: no cover - argparse prevents this.
+
+
+def _combined_plan_payload(plan: Any, dns_plan: Any) -> dict[str, Any]:
+    payload = plan.to_dict()
+    dns_payload = dns_plan.to_dict()
+    payload["dns"] = dns_payload
+    payload["ok"] = bool(payload["ok"] and dns_plan.ok)
+    payload["summary"] = dict(payload["summary"])
+    payload["summary"]["dns"] = dns_payload["summary"]
+    return payload
+
+
+def _format_combined_plan_text(plan: Any, dns_plan: Any) -> str:
+    lines = [format_plan_text(plan), "dns:"]
+    dns_payload = dns_plan.to_dict()
+    lines.append(f"  plan ok: {str(dns_plan.ok).lower()}")
+    lines.append(f"  existing: {dns_payload['existing_count']}")
+    for key, value in dns_payload["summary"].items():
+        lines.append(f"  {key}: {value}")
+    for operation in dns_plan.operations:
+        lines.append(
+            f"    {operation.action.value:<6} dns_record   "
+            f"{operation.provider}/{operation.zone}/{operation.name}/{operation.type} {operation.reason}"
+        )
+        for field, values in operation.diff.items():
+            lines.append(f"      ~ {field}: {values.get('actual')!r} -> {values.get('desired')!r}")
+    for conflict in dns_plan.conflicts:
+        lines.append(f"    ! {conflict.code}: {conflict.message}")
+    return "\n".join(lines)
 
 
 def _require_api_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:

@@ -155,6 +155,105 @@ def test_dns_cli_rejects_unknown_provider(monkeypatch) -> None:
     assert main(["dns", "doctor", "--provider", "missing"]) == EXIT_USAGE_OR_VALIDATION
 
 
+def test_plan_and_apply_include_dns_operations(monkeypatch, fake_npm_server, tmp_path: Path, capsys) -> None:
+    _, base_url = fake_npm_server
+    desired = tmp_path / "desired.yaml"
+    desired.write_text(
+        """
+apiVersion: npmctl.com/v1
+schemaVersion: 2
+dns_records:
+  - provider: namecheap
+    zone: example.com
+    type: A
+    name: "@"
+    value: 192.0.2.10
+    ttl: 300
+    meta:
+      managed_by: npmctl
+      owner: site
+      resource_id: dns.apex
+""",
+        encoding="utf-8",
+    )
+
+    class Provider:
+        name = "namecheap"
+
+        def __init__(self) -> None:
+            self.applied = []
+
+        def zones(self):
+            return ("example.com",)
+
+        def records(self, zone: str):
+            assert zone == "example.com"
+            return ()
+
+        def apply_records(self, zone: str, records: tuple[dict, ...]) -> None:
+            self.applied.append((zone, records))
+
+    provider = Provider()
+
+    class Registry:
+        dns_providers = {"namecheap": provider}
+
+    monkeypatch.setattr("npmctl.cli.PluginRegistry.discover", lambda: Registry())
+    common = ["--base-url", base_url, "--identity", "admin@example.com", "--secret", "changeme"]
+
+    assert main([*common, "--output", "json", "plan", str(desired), "--owner", "site"]) == EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["dns"]["operations"][0]["action"] == "create"
+    assert payload["summary"]["dns"]["create"] == 1
+
+    assert main([*common, "apply", str(desired), "--owner", "site"]) == EXIT_OK
+    out = capsys.readouterr().out
+    assert "dns mutations: 1" in out
+    assert provider.applied[0][1][0]["value"] == "192.0.2.10"
+
+
+def test_dns_plan_readonly_provider_conflicts(monkeypatch, fake_npm_server, tmp_path: Path, capsys) -> None:
+    _, base_url = fake_npm_server
+    desired = tmp_path / "desired.yaml"
+    desired.write_text(
+        """
+apiVersion: npmctl.com/v1
+schemaVersion: 2
+dns_records:
+  - provider: namecheap
+    zone: example.com
+    type: A
+    name: "@"
+    value: 192.0.2.10
+    meta:
+      managed_by: npmctl
+      owner: site
+      resource_id: dns.apex
+""",
+        encoding="utf-8",
+    )
+
+    class Provider:
+        name = "namecheap"
+
+        def zones(self):
+            return ("example.com",)
+
+        def records(self, zone: str):
+            return ({"provider": "namecheap", "zone": "example.com", "name": "@", "type": "A", "value": "192.0.2.9"},)
+
+    class Registry:
+        dns_providers = {"namecheap": Provider()}
+
+    monkeypatch.setattr("npmctl.cli.PluginRegistry.discover", lambda: Registry())
+    common = ["--base-url", base_url, "--identity", "admin@example.com", "--secret", "changeme"]
+
+    assert main([*common, "plan", str(desired), "--owner", "site"]) == EXIT_CONFLICT
+    out = capsys.readouterr().out
+    assert "read_only_dns_provider" in out
+    assert "~ value: '192.0.2.9' -> '192.0.2.10'" in out
+
+
 def test_exit_code_mapping_for_conflict_api_capability_and_migration_errors(
     fake_npm_server, desired_file: Path, tmp_path: Path, capsys
 ) -> None:

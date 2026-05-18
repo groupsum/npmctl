@@ -2,9 +2,9 @@
 
 npmctl DNS providers are Python extension packages registered through the
 `npmctl.dns_providers` entry point group. The base provider contract requires
-`name`, `zones()`, and `records(zone)`. Provider packages may also expose client
-helpers for API-backed record mutation while the core desired-state model remains
-provider-neutral.
+`name`, `zones()`, and `records(zone)`. Providers that participate in
+`npmctl apply` must also expose `apply_records(zone, records)` so the core DNS
+reconciler can fail closed when a provider is read-only.
 
 ## Supported provider packages
 
@@ -71,5 +71,9 @@ type.
 
 - The authoritative DNS host for a zone must match the configured provider.
 - Credentials should be scoped to the target account, hosted zone, or domain.
-- Desired DNS records must keep npmctl owner metadata so future apply support can
+- Desired DNS records must keep npmctl owner metadata so apply and prune behavior
   remain explicit, owner-scoped, and safe against foreign-owned resources.
+- Provider apply rewrites only the selected provider zone payload; unmanaged
+  records returned by the provider are preserved unless they carry matching
+  npmctl ownership metadata and are omitted from desired state during
+  owner-scoped pruning.

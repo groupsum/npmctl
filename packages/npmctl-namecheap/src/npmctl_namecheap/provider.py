@@ -25,3 +25,6 @@ class NamecheapDnsProvider:
 
     def records(self, zone: str) -> tuple[dict[str, object], ...]:
         return tuple(record.to_dict() for record in self.client.records(zone))
+
+    def apply_records(self, zone: str, records: tuple[dict[str, object], ...]) -> None:
+        self.client.set_hosts(zone, records)

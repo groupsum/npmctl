@@ -109,6 +109,53 @@ def test_client_lists_zones_and_records() -> None:
     assert session.calls[1]["params"]["SLD"] == "example"  # type: ignore[index]
 
 
+def test_client_set_hosts_renders_a_and_cname_records() -> None:
+    client = NamecheapClient(_config())
+    client.session = FakeSession(
+        [
+            FakeResponse(
+                200,
+                """<ApiResponse Status="OK" xmlns="http://api.namecheap.com/xml.response" />""",
+            )
+        ]
+    )  # type: ignore[assignment]
+
+    client.set_hosts(
+        "example.com",
+        (
+            {"name": "@", "type": "A", "value": "192.0.2.10", "ttl": 300},
+            {"name": "www", "type": "CNAME", "value": "example.com", "ttl": 600},
+        ),
+    )
+
+    params = client.session.calls[0]["params"]  # type: ignore[index]
+    assert params["Command"] == "namecheap.domains.dns.setHosts"
+    assert params["HostName1"] == "@"
+    assert params["RecordType1"] == "A"
+    assert params["Address1"] == "192.0.2.10"
+    assert params["TTL1"] == "300"
+    assert params["MXPref1"] == ""
+    assert params["HostName2"] == "www"
+    assert params["RecordType2"] == "CNAME"
+    assert params["Address2"] == "example.com"
+
+
+def test_client_set_hosts_rejects_unsupported_records_and_missing_client_ip() -> None:
+    client = NamecheapClient(_config())
+    with pytest.raises(NamecheapError, match="unsupported Namecheap DNS record type"):
+        client.set_hosts("example.com", ({"name": "@", "type": "TXT", "value": "hello"},))
+
+    missing_ip = NamecheapConfig(
+        api_user="api-user",
+        api_key="api-key",
+        username="username",
+        client_ip="",
+        api_base_url="https://namecheap.test/xml.response",
+    )
+    with pytest.raises(NamecheapError, match="client_ip"):
+        NamecheapClient(missing_ip).set_hosts("example.com", ())
+
+
 def test_client_reports_http_api_and_xml_errors() -> None:
     client = NamecheapClient(_config())
     client.session = FakeSession([FakeResponse(500, "broken")])  # type: ignore[assignment]
@@ -124,13 +171,14 @@ def test_client_reports_http_api_and_xml_errors() -> None:
             FakeResponse(
                 200,
                 """<ApiResponse Status="ERROR" xmlns="http://api.namecheap.com/xml.response">
-                <Errors><Error>denied</Error></Errors>
+                <Errors><Error>denied api-key username 192.0.2.10</Error></Errors>
                 </ApiResponse>""",
             )
         ]
     )  # type: ignore[assignment]
-    with pytest.raises(NamecheapError, match="denied"):
+    with pytest.raises(NamecheapError, match=r"denied \*\*\* \*\*\* \*\*\*") as exc_info:
         client.zones()
+    assert "api-key" not in str(exc_info.value)
 
 
 def test_provider_returns_record_dicts() -> None:
@@ -146,3 +194,26 @@ def test_provider_returns_record_dicts() -> None:
 
     assert provider.zones() == ("example.com",)
     assert provider.records("example.com")[0]["value"] == "192.0.2.10"
+
+
+def test_provider_applies_record_dicts() -> None:
+    class Client:
+        def __init__(self) -> None:
+            self.calls = []
+
+        def zones(self):
+            return ("example.com",)
+
+        def records(self, zone: str):
+            assert zone == "example.com"
+            return ()
+
+        def set_hosts(self, zone: str, records: tuple[dict[str, object], ...]) -> None:
+            self.calls.append((zone, records))
+
+    client = Client()
+    provider = NamecheapDnsProvider(client)  # type: ignore[arg-type]
+
+    provider.apply_records("example.com", ({"name": "@", "type": "A", "value": "192.0.2.10"},))
+
+    assert client.calls == [("example.com", ({"name": "@", "type": "A", "value": "192.0.2.10"},))]

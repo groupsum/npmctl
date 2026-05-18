@@ -1,0 +1,17 @@
+schema_version: "0.2.0"
+kind: "adr"
+id: "adr:1003"
+number: 1003
+slug: "provider-backed-dns-reconciliation"
+title: "Provider-backed DNS reconciliation is a first-class apply surface"
+status: "draft"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Decision: dns_records are reconciled by npmctl plan/apply as a first-class surface instead of being limited to validation and diagnostics. Consequences: planning must include DNS operations, apply must execute provider writes or fail closed, and reports must distinguish DNS mutations from Nginx Proxy Manager mutations."
+supersedes: []
+superseded_by: []
+status_notes: []
+references: []
+body: |-
+  Decision: dns_records are reconciled by npmctl plan/apply as a first-class surface instead of being limited to validation and diagnostics. Consequences: planning must include DNS operations, apply must execute provider writes or fail closed, and reports must distinguish DNS mutations from Nginx Proxy Manager mutations.

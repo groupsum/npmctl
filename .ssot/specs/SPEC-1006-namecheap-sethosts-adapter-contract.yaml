@@ -1,0 +1,21 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1006"
+number: 1006
+slug: "namecheap-sethosts-adapter-contract"
+title: "Namecheap setHosts adapter contract"
+status: "draft"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Normative contract: npmctl-namecheap apply uses namecheap.domains.dns.setHosts with complete zone host payloads, translates A and CNAME records into Namecheap HostName RecordType Address TTL and MXPref fields, preserves unmanaged records, removes stale npmctl-owned records, validates NAMECHEAP_CLIENT_IP, and redacts secrets from XML/API errors."
+supersedes: []
+superseded_by: []
+status_notes: []
+references: []
+body: |-
+  Normative contract: npmctl-namecheap apply uses namecheap.domains.dns.setHosts with complete zone host payloads, translates A and CNAME records into Namecheap HostName RecordType Address TTL and MXPref fields, preserves unmanaged records, removes stale npmctl-owned records, validates NAMECHEAP_CLIENT_IP, and redacts secrets from XML/API errors.
+spec_kind: "normative"
+adr_ids:
+  - "adr:1003"
+  - "adr:1004"

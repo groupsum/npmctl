@@ -34,6 +34,7 @@
 - Lets DNS workflows live beside proxy and certificate desired state
 - Keeps provider-specific credentials out of the core CLI package
 - Supports operator diagnostics through `npmctl dns doctor`
+- Persists A and CNAME records through Namecheap `setHosts` during `npmctl apply`
 
 ## FAQ
 
@@ -108,11 +109,21 @@ npmctl dns doctor --provider namecheap
 
 ## Minimal DNS Workflow
 
-Once the provider is installed and configured, `npmctl` can validate or diagnose Namecheap-backed DNS behavior through the base CLI:
+Once the provider is installed and configured, `npmctl` can validate, plan, apply,
+and diagnose Namecheap-backed DNS behavior through the base CLI:
 
 ```bash
+npmctl validate desired-state/dns.yaml
+npmctl plan desired-state/dns.yaml --owner site-a
+npmctl apply desired-state/dns.yaml --owner site-a
 npmctl dns doctor --provider namecheap
+npmctl dns records --provider namecheap --zone example.com
 ```
+
+Namecheap apply uses `namecheap.domains.dns.setHosts`, so npmctl sends the full
+zone host set required by the Namecheap XML API. Unmanaged records returned by
+Namecheap are preserved; stale npmctl-owned records can be removed with
+owner-scoped prune behavior when they are omitted from desired state.
 
 ## More Documentation
 

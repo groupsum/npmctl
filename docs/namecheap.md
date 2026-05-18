@@ -11,5 +11,16 @@ Configuration is read from environment variables:
 - `NAMECHEAP_CLIENT_IP`
 - `NAMECHEAP_API_BASE_URL` for test or non-default API endpoints
 
-The provider uses Namecheap's XML API to list zones and records for diagnostics.
+The provider uses Namecheap's XML API to list zones and records for diagnostics
+and to persist desired DNS state during `npmctl apply`.
 Desired-state DNS records are modeled in npmctl schema v2 under `dns_records`.
+
+Namecheap applies host records through `namecheap.domains.dns.setHosts`, which
+requires a complete zone host payload. npmctl builds that payload from the
+current Namecheap records plus the desired npmctl-owned records, preserving
+unmanaged records in the same zone and removing stale npmctl-owned records when
+owner-scoped pruning is requested.
+
+The Namecheap writer supports A and CNAME records for declarative apply. It
+validates `NAMECHEAP_CLIENT_IP` before mutation and redacts configured
+Namecheap credential values from API error messages.

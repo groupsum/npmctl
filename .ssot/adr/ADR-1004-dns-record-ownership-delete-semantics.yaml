@@ -1,0 +1,17 @@
+schema_version: "0.2.0"
+kind: "adr"
+id: "adr:1004"
+number: 1004
+slug: "dns-record-ownership-delete-semantics"
+title: "DNS record ownership and delete semantics for registrar APIs"
+status: "draft"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Decision: DNS deletes are allowed only for records proven to be npmctl-owned or explicitly managed for the requested owner. Consequences: unmanaged provider records in the same zone are preserved, destructive pruning is owner-scoped, and ambiguous ownership blocks deletion until adoption or explicit management is available."
+supersedes: []
+superseded_by: []
+status_notes: []
+references: []
+body: |-
+  Decision: DNS deletes are allowed only for records proven to be npmctl-owned or explicitly managed for the requested owner. Consequences: unmanaged provider records in the same zone are preserved, destructive pruning is owner-scoped, and ambiguous ownership blocks deletion until adoption or explicit management is available.

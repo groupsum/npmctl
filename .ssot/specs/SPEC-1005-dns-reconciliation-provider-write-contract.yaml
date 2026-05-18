@@ -1,0 +1,21 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1005"
+number: 1005
+slug: "dns-reconciliation-provider-write-contract"
+title: "DNS reconciliation and provider write contract"
+status: "draft"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Normative contract: dns_records participate in plan/apply, are grouped by provider and zone, compare desired and provider state into create update delete noop operations, require provider write support for apply, preserve owner scope, and emit DNS mutation results separately from NPM mutations."
+supersedes: []
+superseded_by: []
+status_notes: []
+references: []
+body: |-
+  Normative contract: dns_records participate in plan/apply, are grouped by provider and zone, compare desired and provider state into create update delete noop operations, require provider write support for apply, preserve owner scope, and emit DNS mutation results separately from NPM mutations.
+spec_kind: "normative"
+adr_ids:
+  - "adr:1003"
+  - "adr:1004"

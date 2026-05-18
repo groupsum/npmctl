@@ -33,6 +33,20 @@ class NamecheapClient:
         hosts = data.findall(".//nc:host", _NAMESPACE)
         return tuple(NamecheapRecord.from_attrs(host.attrib) for host in hosts)
 
+    def set_hosts(self, zone: str, records: tuple[dict[str, Any], ...]) -> None:
+        sld, tld = split_zone(zone)
+        if not self.config.client_ip:
+            raise NamecheapError("missing Namecheap config: client_ip")
+        params: dict[str, str] = {"SLD": sld, "TLD": tld}
+        for index, record in enumerate(records, start=1):
+            host = _host_payload(record)
+            params[f"HostName{index}"] = host["HostName"]
+            params[f"RecordType{index}"] = host["RecordType"]
+            params[f"Address{index}"] = host["Address"]
+            params[f"TTL{index}"] = host["TTL"]
+            params[f"MXPref{index}"] = host["MXPref"]
+        self._request("namecheap.domains.dns.setHosts", **params)
+
     def _request(self, command: str, **params: str) -> ElementTree.Element:
         query: dict[str, Any] = {
             "ApiUser": self.config.api_user,
@@ -51,5 +65,29 @@ class NamecheapClient:
             raise NamecheapError("Namecheap API returned invalid XML") from exc
         if parsed.attrib.get("Status") == "ERROR":
             errors = [item.text or "unknown error" for item in parsed.findall(".//nc:Error", _NAMESPACE)]
-            raise NamecheapError("; ".join(errors))
+            raise NamecheapError(self._redact("; ".join(errors)))
         return parsed
+
+    def _redact(self, message: str) -> str:
+        redacted = message
+        for value in (self.config.api_user, self.config.api_key, self.config.username, self.config.client_ip):
+            if value:
+                redacted = redacted.replace(value, "***")
+        return redacted
+
+
+def _host_payload(record: dict[str, Any]) -> dict[str, str]:
+    record_type = str(record.get("type", "")).upper()
+    if record_type not in {"A", "CNAME"}:
+        raise NamecheapError(f"unsupported Namecheap DNS record type: {record_type}")
+    name = str(record.get("name", "")).strip().lower() or "@"
+    ttl = record.get("ttl", 300)
+    if ttl is None:
+        ttl = 300
+    return {
+        "HostName": name,
+        "RecordType": record_type,
+        "Address": str(record.get("value") or record.get("address") or ""),
+        "TTL": str(int(ttl)),
+        "MXPref": "" if record.get("priority") is None else str(int(record["priority"])),
+    }
