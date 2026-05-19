@@ -18,8 +18,18 @@ keywords = [
   "plan-apply",
   "owner-scoped",
   "dns",
+  "dns-management",
+  "dns-provider",
+  "dns-records",
   "ssl-certificates",
   "access-lists",
+  "a-record",
+  "aaaa-record",
+  "cname-record",
+  "txt-record",
+  "mx-record",
+  "srv-record",
+  "caa-record",
 ]
 classifiers = [
   "Development Status :: 4 - Beta",

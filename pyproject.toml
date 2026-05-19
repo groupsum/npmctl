@@ -6,6 +6,38 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
+keywords = [
+  "nginx-proxy-manager",
+  "npm",
+  "reverse-proxy",
+  "gitops",
+  "desired-state",
+  "infrastructure-as-code",
+  "controller",
+  "plan-apply",
+  "owner-scoped",
+  "dns",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Information Technology",
+  "Intended Audience :: System Administrators",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Internet :: Name Service (DNS)",
+  "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+  "Topic :: System :: Networking",
+  "Topic :: System :: Systems Administration",
+  "Typing :: Typed",
+]
 
 [tool.uv]
 package = false

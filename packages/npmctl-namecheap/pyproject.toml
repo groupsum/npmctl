@@ -29,6 +29,7 @@ classifiers = [
 keywords = [
   "desired-state",
   "dns",
+  "dns-management",
   "dns-provider",
   "dns-records",
   "gitops",
@@ -37,6 +38,13 @@ keywords = [
   "nginx-proxy-manager",
   "npmctl",
   "sethosts",
+  "a-record",
+  "aaaa-record",
+  "cname-record",
+  "txt-record",
+  "mx-record",
+  "srv-record",
+  "caa-record",
 ]
 dependencies = [
   "requests>=2.32.0",

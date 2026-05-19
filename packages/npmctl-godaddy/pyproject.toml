@@ -8,7 +8,7 @@ license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [{ name = "Jacob Stewart", email = "jacob@swarmauri.com" }]
 classifiers = [
-  "Development Status :: 1 - Planning",
+  "Development Status :: 4 - Beta",
   "Environment :: Plugins",
   "Intended Audience :: Developers",
   "Intended Audience :: Information Technology",
@@ -29,6 +29,7 @@ classifiers = [
 keywords = [
   "desired-state",
   "dns",
+  "dns-management",
   "dns-provider",
   "dns-records",
   "gitops",
@@ -36,6 +37,13 @@ keywords = [
   "infrastructure-as-code",
   "nginx-proxy-manager",
   "npmctl",
+  "a-record",
+  "aaaa-record",
+  "cname-record",
+  "txt-record",
+  "mx-record",
+  "srv-record",
+  "caa-record",
 ]
 dependencies = [
   "requests>=2.32.0",
