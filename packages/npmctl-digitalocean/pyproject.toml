@@ -9,18 +9,34 @@ license-files = ["LICENSE"]
 authors = [{ name = "Jacob Stewart", email = "jacob@swarmauri.com" }]
 classifiers = [
   "Development Status :: 1 - Planning",
+  "Environment :: Plugins",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Information Technology",
   "Intended Audience :: System Administrators",
-  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
   "Topic :: Internet :: Name Service (DNS)",
+  "Topic :: System :: Networking",
   "Topic :: System :: Systems Administration",
+  "Typing :: Typed",
 ]
-keywords = ["digitalocean", "dns", "nginx-proxy-manager", "npmctl"]
+keywords = [
+  "desired-state",
+  "digitalocean",
+  "dns",
+  "dns-provider",
+  "dns-records",
+  "gitops",
+  "infrastructure-as-code",
+  "nginx-proxy-manager",
+  "npmctl",
+]
 dependencies = [
   "requests>=2.32.0",
 ]
