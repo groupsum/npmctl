@@ -21,6 +21,8 @@ current Namecheap records plus the desired npmctl-owned records, preserving
 unmanaged records in the same zone and removing stale npmctl-owned records when
 owner-scoped pruning is requested.
 
-The Namecheap writer supports A and CNAME records for declarative apply. It
-validates `NAMECHEAP_CLIENT_IP` before mutation and redacts configured
-Namecheap credential values from API error messages.
+The Namecheap writer supports A, AAAA, CNAME, TXT, MX, SRV, and CAA records for
+declarative apply. MX records require `priority`; other record types reject
+`priority` at schema validation time. The writer validates
+`NAMECHEAP_CLIENT_IP` before mutation and redacts configured Namecheap
+credential values from API error messages.

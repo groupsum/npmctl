@@ -37,11 +37,14 @@ class CloudflareClient:
         name: str,
         value: str,
         ttl: int | None = None,
+        priority: int | None = None,
         proxied: bool | None = None,
     ) -> CloudflareRecord:
         payload: dict[str, object] = {"type": type.upper(), "name": name, "content": value}
         if ttl is not None:
             payload["ttl"] = ttl
+        if priority is not None:
+            payload["priority"] = priority
         if proxied is not None:
             payload["proxied"] = proxied
         data = self._request("POST", f"/zones/{self._zone_id(zone)}/dns_records", json=payload)
@@ -56,11 +59,14 @@ class CloudflareClient:
         name: str,
         value: str,
         ttl: int | None = None,
+        priority: int | None = None,
         proxied: bool | None = None,
     ) -> CloudflareRecord:
         payload: dict[str, object] = {"type": type.upper(), "name": name, "content": value}
         if ttl is not None:
             payload["ttl"] = ttl
+        if priority is not None:
+            payload["priority"] = priority
         if proxied is not None:
             payload["proxied"] = proxied
         data = self._request("PUT", f"/zones/{self._zone_id(zone)}/dns_records/{record_id}", json=payload)

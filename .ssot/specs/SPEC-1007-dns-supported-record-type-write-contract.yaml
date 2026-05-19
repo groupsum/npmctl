@@ -1,0 +1,22 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1007"
+number: 1007
+slug: "dns-supported-record-type-write-contract"
+title: "DNS supported record type write contract"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Normative contract: provider-backed DNS apply SHALL accept and persist A, AAAA, CNAME, TXT, MX, SRV, and CAA records through installed providers that expose apply_records. Desired MX records SHALL include priority and providers SHALL propagate that priority using their native payload shape, including Route 53 resource record values and Namecheap MXPref. Non-MX priority remains invalid under schema v2. Provider adapters SHALL preserve unmanaged records supplied by the core reconciler, compare existing records by normalized relative name and type, create missing desired records, update changed desired records, delete only omitted records in the next provider payload supplied by owner-scoped core reconciliation, and fail closed when write support is unavailable. Execution body: validate schema behavior, plan/apply reconciliation behavior, provider payload rendering, invalid MX priority rejection, and provider-specific persistence calls for Namecheap, Cloudflare, DigitalOcean, GoDaddy, and Route 53."
+supersedes: []
+superseded_by: []
+status_notes: []
+references: []
+body: |-
+  Normative contract: provider-backed DNS apply SHALL accept and persist A, AAAA, CNAME, TXT, MX, SRV, and CAA records through installed providers that expose apply_records. Desired MX records SHALL include priority and providers SHALL propagate that priority using their native payload shape, including Route 53 resource record values and Namecheap MXPref. Non-MX priority remains invalid under schema v2. Provider adapters SHALL preserve unmanaged records supplied by the core reconciler, compare existing records by normalized relative name and type, create missing desired records, update changed desired records, delete only omitted records in the next provider payload supplied by owner-scoped core reconciliation, and fail closed when write support is unavailable. Execution body: validate schema behavior, plan/apply reconciliation behavior, provider payload rendering, invalid MX priority rejection, and provider-specific persistence calls for Namecheap, Cloudflare, DigitalOcean, GoDaddy, and Route 53.
+spec_kind: "normative"
+adr_ids:
+  - "adr:1005"
+  - "adr:1003"
+  - "adr:1004"

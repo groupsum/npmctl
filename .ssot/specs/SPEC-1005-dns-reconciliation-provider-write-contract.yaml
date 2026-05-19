@@ -8,13 +8,13 @@ status: "draft"
 origin: "repo-local"
 decision_date: null
 tags: []
-summary: "Normative contract: dns_records participate in plan/apply, are grouped by provider and zone, compare desired and provider state into create update delete noop operations, require provider write support for apply, preserve owner scope, and emit DNS mutation results separately from NPM mutations."
+summary: "Normative contract: dns_records participate in plan/apply, are grouped by provider and zone, compare desired and provider state into create update delete noop operations, require provider write support for apply, preserve owner scope, and emit DNS mutation results separately from NPM mutations. Provider writers SHALL support A, AAAA, CNAME, TXT, MX, SRV, and CAA records. MX records SHALL require priority; non-MX records SHALL reject priority at schema validation time."
 supersedes: []
 superseded_by: []
 status_notes: []
 references: []
 body: |-
-  Normative contract: dns_records participate in plan/apply, are grouped by provider and zone, compare desired and provider state into create update delete noop operations, require provider write support for apply, preserve owner scope, and emit DNS mutation results separately from NPM mutations.
+  Normative contract: dns_records participate in plan/apply, are grouped by provider and zone, compare desired and provider state into create update delete noop operations, require provider write support for apply, preserve owner scope, and emit DNS mutation results separately from NPM mutations. Provider writers SHALL support A, AAAA, CNAME, TXT, MX, SRV, and CAA records. MX records SHALL require priority; non-MX records SHALL reject priority at schema validation time.
 spec_kind: "normative"
 adr_ids:
   - "adr:1003"

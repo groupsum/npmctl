@@ -1,11 +1,11 @@
 # SSOT index
 
-Features: 165
+Features: 166
 Claims: 17
-Tests: 101
+Tests: 105
 Evidence: 19
 Profiles: 1
-Boundaries: 4
+Boundaries: 5
 Releases: 4
 
 - [Features](features.md)

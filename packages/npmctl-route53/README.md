@@ -34,7 +34,7 @@
 - Lets DNS workflows live beside proxy and certificate desired state
 - Keeps AWS DNS dependencies out of the core CLI package
 - Supports operator diagnostics through `npmctl dns doctor`
-- Provides client helpers for Route 53 A and CNAME change-batch workflows
+- Provides client helpers for Route 53 DNS change-batch workflows
 
 ## FAQ
 
@@ -50,9 +50,9 @@
 
 **Answer:** No. `npmctl-route53` is an extension package for `npmctl`, not a standalone CLI.
 
-### Can npmctl-route53 set A and CNAME records?
+### Can npmctl-route53 set DNS records?
 
-**Answer:** Yes. Route 53 supports A and CNAME record sets through `ChangeResourceRecordSets`, and this package exposes helpers for `CREATE`, `UPSERT`, and `DELETE` batches.
+**Answer:** Yes. The Route 53 provider supports declarative A, AAAA, CNAME, TXT, MX, SRV, and CAA writes through `ChangeResourceRecordSets`. MX records require `priority`.
 
 ### What credentials are required?
 
@@ -118,9 +118,12 @@ npmctl dns doctor --provider route53
 
 ## Minimal DNS Workflow
 
-Once the provider is installed and configured, `npmctl` can validate or diagnose Route 53-backed DNS behavior through the base CLI:
+Once the provider is installed and configured, `npmctl` can validate, plan, apply, or diagnose Route 53-backed DNS behavior through the base CLI:
 
 ```bash
+npmctl validate desired-state/dns.yaml
+npmctl plan desired-state/dns.yaml --owner site-a
+npmctl apply desired-state/dns.yaml --owner site-a
 npmctl dns providers
 npmctl dns zones --provider route53
 npmctl dns records --provider route53 --zone example.com
@@ -153,6 +156,7 @@ from npmctl_route53 import Route53Client, Route53Config
 client = Route53Client(Route53Config.from_env())
 client.create_record("example.com", type="A", name="www", value="192.0.2.10", ttl=300)
 client.upsert_record("example.com", type="CNAME", name="app", value="target.example.net", ttl=300)
+client.upsert_record("example.com", type="MX", name="@", value="mail.example.com", ttl=300, priority=10)
 client.delete_record("example.com", type="A", name="www", value="192.0.2.10", ttl=300)
 ```
 
@@ -161,7 +165,7 @@ client.delete_record("example.com", type="A", name="www", value="192.0.2.10", tt
 - Route 53 changes are hosted-zone scoped. Confirm the selected hosted zone before mutation.
 - Prefer IAM policies scoped to the intended hosted zone ARN.
 - `UPSERT` can overwrite live DNS answers. Use create-only workflows when adoption is not explicit.
-- Use npmctl owner metadata for desired DNS records so future apply support can remain owner-scoped.
+- Use npmctl owner metadata for desired DNS records so apply remains owner-scoped.
 
 ## More Documentation
 

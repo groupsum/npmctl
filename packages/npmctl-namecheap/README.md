@@ -34,7 +34,7 @@
 - Lets DNS workflows live beside proxy and certificate desired state
 - Keeps provider-specific credentials out of the core CLI package
 - Supports operator diagnostics through `npmctl dns doctor`
-- Persists A and CNAME records through Namecheap `setHosts` during `npmctl apply`
+- Persists A, AAAA, CNAME, TXT, MX, SRV, and CAA records through Namecheap `setHosts` during `npmctl apply`
 
 ## FAQ
 
@@ -124,6 +124,8 @@ Namecheap apply uses `namecheap.domains.dns.setHosts`, so npmctl sends the full
 zone host set required by the Namecheap XML API. Unmanaged records returned by
 Namecheap are preserved; stale npmctl-owned records can be removed with
 owner-scoped prune behavior when they are omitted from desired state.
+The supported declarative record types are A, AAAA, CNAME, TXT, MX, SRV, and
+CAA. MX records require `priority`.
 
 ## More Documentation
 

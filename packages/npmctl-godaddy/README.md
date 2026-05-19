@@ -50,9 +50,9 @@
 
 **Answer:** No. `npmctl-godaddy` is an extension package for `npmctl`, not a standalone CLI.
 
-### Can npmctl-godaddy set A and CNAME records?
+### Can npmctl-godaddy set DNS records?
 
-**Answer:** Yes. GoDaddy's Domains API supports A and CNAME records. Its DNS mutation endpoint replaces all records for one `{type, name}` pair, so preserve existing values when managing multi-value records.
+**Answer:** Yes. The GoDaddy provider supports declarative A, AAAA, CNAME, TXT, MX, SRV, and CAA writes. MX records require `priority`. Its DNS mutation endpoint replaces all records for one `{type, name}` pair, so preserve existing values when managing multi-value records.
 
 ### What credentials are required?
 
@@ -111,9 +111,12 @@ npmctl dns doctor --provider godaddy
 
 ## Minimal DNS Workflow
 
-Once the provider is installed and configured, `npmctl` can validate or diagnose GoDaddy-backed DNS behavior through the base CLI:
+Once the provider is installed and configured, `npmctl` can validate, plan, apply, or diagnose GoDaddy-backed DNS behavior through the base CLI:
 
 ```bash
+npmctl validate desired-state/dns.yaml
+npmctl plan desired-state/dns.yaml --owner site-a
+npmctl apply desired-state/dns.yaml --owner site-a
 npmctl dns providers
 npmctl dns zones --provider godaddy
 npmctl dns records --provider godaddy --zone example.com
@@ -152,7 +155,7 @@ client.delete_records("example.com", type="A", name="www")
 - GoDaddy `PUT` replaces all records for the selected `{type, name}` pair.
 - Account-level domain locks, premium DNS status, protection settings, or product eligibility may block API changes even when credentials are valid.
 - Use least-privilege keys where available and avoid broad automation over unrelated domains.
-- Use npmctl owner metadata for desired DNS records so future apply support can remain owner-scoped.
+- Use npmctl owner metadata for desired DNS records so apply remains owner-scoped.
 
 ## More Documentation
 

@@ -28,14 +28,20 @@ class Route53Client:
         data = self.api.list_resource_record_sets(HostedZoneId=zone_id)  # type: ignore[attr-defined]
         return tuple(Route53Record.from_mapping(item) for item in data.get("ResourceRecordSets", []))
 
-    def create_record(self, zone: str, *, type: str, name: str, value: str, ttl: int = 300) -> str | None:
-        return self._change_record("CREATE", zone, type=type, name=name, value=value, ttl=ttl)
+    def create_record(
+        self, zone: str, *, type: str, name: str, value: str, ttl: int = 300, priority: int | None = None
+    ) -> str | None:
+        return self._change_record("CREATE", zone, type=type, name=name, value=value, ttl=ttl, priority=priority)
 
-    def upsert_record(self, zone: str, *, type: str, name: str, value: str, ttl: int = 300) -> str | None:
-        return self._change_record("UPSERT", zone, type=type, name=name, value=value, ttl=ttl)
+    def upsert_record(
+        self, zone: str, *, type: str, name: str, value: str, ttl: int = 300, priority: int | None = None
+    ) -> str | None:
+        return self._change_record("UPSERT", zone, type=type, name=name, value=value, ttl=ttl, priority=priority)
 
-    def delete_record(self, zone: str, *, type: str, name: str, value: str, ttl: int = 300) -> str | None:
-        return self._change_record("DELETE", zone, type=type, name=name, value=value, ttl=ttl)
+    def delete_record(
+        self, zone: str, *, type: str, name: str, value: str, ttl: int = 300, priority: int | None = None
+    ) -> str | None:
+        return self._change_record("DELETE", zone, type=type, name=name, value=value, ttl=ttl, priority=priority)
 
     def _zones(self) -> tuple[Route53Zone, ...]:
         data = self.api.list_hosted_zones()  # type: ignore[attr-defined]
@@ -48,7 +54,10 @@ class Route53Client:
                 return item.zone_id
         raise Route53Error(f"Route 53 hosted zone not found: {zone}")
 
-    def _change_record(self, action: str, zone: str, *, type: str, name: str, value: str, ttl: int) -> str | None:
+    def _change_record(
+        self, action: str, zone: str, *, type: str, name: str, value: str, ttl: int, priority: int | None = None
+    ) -> str | None:
+        record_type = type.upper()
         data = self.api.change_resource_record_sets(  # type: ignore[attr-defined]
             HostedZoneId=self._zone_id(zone),
             ChangeBatch={
@@ -57,9 +66,9 @@ class Route53Client:
                         "Action": action,
                         "ResourceRecordSet": {
                             "Name": _absolute_name(name, zone),
-                            "Type": type.upper(),
+                            "Type": record_type,
                             "TTL": ttl,
-                            "ResourceRecords": [{"Value": value}],
+                            "ResourceRecords": [{"Value": _record_value(record_type, value, priority)}],
                         },
                     }
                 ]
@@ -82,6 +91,14 @@ def _default_api(config: Route53Config) -> object:
         session_kwargs["region_name"] = config.region_name
     session = boto3.Session(**session_kwargs)
     return session.client("route53")
+
+
+def _record_value(record_type: str, value: str, priority: int | None) -> str:
+    if record_type == "MX":
+        if priority is None:
+            raise Route53Error("priority is required for MX records")
+        return f"{priority} {value}"
+    return value
 
 
 def _absolute_name(name: str, zone: str) -> str:

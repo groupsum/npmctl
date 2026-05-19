@@ -34,7 +34,7 @@
 - Lets DNS workflows live beside proxy and certificate desired state
 - Keeps DigitalOcean tokens out of the core CLI package
 - Supports operator diagnostics through `npmctl dns doctor`
-- Provides client helpers for DigitalOcean A and CNAME record workflows
+- Provides client helpers for DigitalOcean DNS record workflows
 
 ## FAQ
 
@@ -50,9 +50,9 @@
 
 **Answer:** No. `npmctl-digitalocean` is an extension package for `npmctl`, not a standalone CLI.
 
-### Can npmctl-digitalocean set A and CNAME records?
+### Can npmctl-digitalocean set DNS records?
 
-**Answer:** Yes. DigitalOcean's Domain Records API supports A and CNAME records, and this package exposes helpers for create, update, and delete operations.
+**Answer:** Yes. The DigitalOcean provider supports declarative A, AAAA, CNAME, TXT, MX, SRV, and CAA writes. MX records require `priority`.
 
 ### What credentials are required?
 
@@ -110,9 +110,12 @@ npmctl dns doctor --provider digitalocean
 
 ## Minimal DNS Workflow
 
-Once the provider is installed and configured, `npmctl` can validate or diagnose DigitalOcean-backed DNS behavior through the base CLI:
+Once the provider is installed and configured, `npmctl` can validate, plan, apply, or diagnose DigitalOcean-backed DNS behavior through the base CLI:
 
 ```bash
+npmctl validate desired-state/dns.yaml
+npmctl plan desired-state/dns.yaml --owner site-a
+npmctl apply desired-state/dns.yaml --owner site-a
 npmctl dns providers
 npmctl dns zones --provider digitalocean
 npmctl dns records --provider digitalocean --zone example.com
@@ -124,7 +127,7 @@ The provider follows the DigitalOcean Domains and Domain Records API:
 
 - `GET /v2/domains`: discover domains managed in the account.
 - `GET /v2/domains/{domain_name}/records`: list DNS records for one domain.
-- `POST /v2/domains/{domain_name}/records`: create A, CNAME, and other supported records.
+- `POST /v2/domains/{domain_name}/records`: create supported DNS records.
 - `PUT /v2/domains/{domain_name}/records/{domain_record_id}`: update a record.
 - `DELETE /v2/domains/{domain_name}/records/{domain_record_id}`: delete a record.
 
@@ -139,14 +142,15 @@ client.update_record("example.com", int(record.record_id), type="A", name="www",
 client.delete_record("example.com", int(record.record_id))
 ```
 
-CNAME records use `type="CNAME"` and place the target host in `value`.
+CNAME and other supported record types use the same `type`, `name`, `value`,
+and `ttl` shape. MX records pass `priority`.
 
 ## Safety Notes
 
 - DigitalOcean record `name` is relative to the zone; use `@` for the root where applicable.
 - Keep `DIGITALOCEAN_TOKEN` out of desired-state files and logs.
 - Use account and token scoping to avoid mutating foreign-owned DNS.
-- Use npmctl owner metadata for desired DNS records so future apply support can remain owner-scoped.
+- Use npmctl owner metadata for desired DNS records so apply remains owner-scoped.
 
 ## More Documentation
 

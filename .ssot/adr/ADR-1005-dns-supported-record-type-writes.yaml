@@ -1,0 +1,17 @@
+schema_version: "0.2.0"
+kind: "adr"
+id: "adr:1005"
+number: 1005
+slug: "dns-supported-record-type-writes"
+title: "DNS provider writers support the operational record set"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Decision: npmctl DNS provider writers SHALL support the operational DNS record set used by site repositories: A, AAAA, CNAME, TXT, MX, SRV, and CAA. MX records SHALL require priority in desired state and provider payloads. Priority SHALL remain invalid for non-MX records until a future schema explicitly models provider-specific SRV priority fields. Context: site DNS workflows need more than apex A and www CNAME records, and successful apply must not silently omit required operational records. Consequences: provider adapters must pass these record types through their native APIs, fail closed when unsupported or invalid, and keep owner-scoped reconciliation semantics unchanged."
+supersedes: []
+superseded_by: []
+status_notes: []
+references: []
+body: |-
+  Decision: npmctl DNS provider writers SHALL support the operational DNS record set used by site repositories: A, AAAA, CNAME, TXT, MX, SRV, and CAA. MX records SHALL require priority in desired state and provider payloads. Priority SHALL remain invalid for non-MX records until a future schema explicitly models provider-specific SRV priority fields. Context: site DNS workflows need more than apex A and www CNAME records, and successful apply must not silently omit required operational records. Consequences: provider adapters must pass these record types through their native APIs, fail closed when unsupported or invalid, and keep owner-scoped reconciliation semantics unchanged.

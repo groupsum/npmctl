@@ -8,13 +8,17 @@ reconciler can fail closed when a provider is read-only.
 
 ## Supported provider packages
 
-| Package | Provider name | API family | A records | CNAME records | Mutation model |
-| --- | --- | --- | --- | --- | --- |
-| `npmctl-namecheap` | `namecheap` | Namecheap XML API | yes | yes | registrar host records |
-| `npmctl-cloudflare` | `cloudflare` | Cloudflare DNS Records API | yes | yes | create, put, patch, delete records |
-| `npmctl-route53` | `route53` | AWS Route 53 API | yes | yes | `ChangeResourceRecordSets` batches |
-| `npmctl-digitalocean` | `digitalocean` | DigitalOcean Domain Records API | yes | yes | create, update, delete records |
-| `npmctl-godaddy` | `godaddy` | GoDaddy Domains API | yes | yes | replace records by `{type, name}` |
+| Package | Provider name | API family | Supported writes | Mutation model |
+| --- | --- | --- | --- | --- |
+| `npmctl-namecheap` | `namecheap` | Namecheap XML API | A, AAAA, CNAME, TXT, MX, SRV, CAA | registrar host records |
+| `npmctl-cloudflare` | `cloudflare` | Cloudflare DNS Records API | A, AAAA, CNAME, TXT, MX, SRV, CAA | create, put, patch, delete records |
+| `npmctl-route53` | `route53` | AWS Route 53 API | A, AAAA, CNAME, TXT, MX, SRV, CAA | `ChangeResourceRecordSets` batches |
+| `npmctl-digitalocean` | `digitalocean` | DigitalOcean Domain Records API | A, AAAA, CNAME, TXT, MX, SRV, CAA | create, update, delete records |
+| `npmctl-godaddy` | `godaddy` | GoDaddy Domains API | A, AAAA, CNAME, TXT, MX, SRV, CAA | replace records by `{type, name}` |
+
+All provider writers accept the npmctl DNS record schema types `A`, `AAAA`,
+`CNAME`, `TXT`, `MX`, `SRV`, and `CAA`. MX records require `priority`; other
+record types reject `priority` at schema validation time.
 
 ## Cloudflare
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from npmctl_godaddy.client import GoDaddyClient
 from npmctl_godaddy.config import GoDaddyConfig
 
@@ -25,3 +27,49 @@ class GoDaddyDnsProvider:
 
     def records(self, zone: str) -> tuple[dict[str, object], ...]:
         return tuple(record.to_dict() for record in self.client.records(zone))
+
+    def apply_records(self, zone: str, records: tuple[dict[str, object], ...]) -> None:
+        current = {_record_key(record): record for record in self.records(zone)}
+        desired = {_record_key(record): _normalized_record(record) for record in records}
+        for key, record in sorted(current.items()):
+            if key not in desired:
+                self.client.delete_records(zone, type=str(record["type"]), name=str(record["name"]))
+        for key, record in sorted(desired.items()):
+            existing = current.get(key)
+            if existing is None or _record_changed(existing, record):
+                self.client.replace_records(
+                    zone,
+                    type=str(record["type"]),
+                    name=str(record["name"]),
+                    records=[_record_payload(record)],
+                )
+
+
+def _record_key(record: dict[str, Any]) -> tuple[str, str]:
+    return (str(record.get("name", "")).lower().rstrip(".") or "@", str(record.get("type", "")).upper())
+
+
+def _normalized_record(record: dict[str, Any]) -> dict[str, Any]:
+    out = dict(record)
+    out["name"] = str(out.get("name", "")).lower().rstrip(".") or "@"
+    out["type"] = str(out.get("type", "")).upper()
+    if "ttl" in out and out["ttl"] is not None:
+        out["ttl"] = int(out["ttl"])
+    if "priority" in out and out["priority"] is not None:
+        out["priority"] = int(out["priority"])
+    return out
+
+
+def _record_payload(record: dict[str, Any]) -> dict[str, Any]:
+    payload: dict[str, Any] = {"data": str(record.get("value", ""))}
+    for key in ("ttl", "priority", "port", "protocol", "service", "weight"):
+        if record.get(key) is not None:
+            payload[key] = record[key]
+    return payload
+
+
+def _record_changed(existing: dict[str, Any], desired: dict[str, Any]) -> bool:
+    for key in ("value", "ttl", "priority"):
+        if desired.get(key) != existing.get(key):
+            return True
+    return False

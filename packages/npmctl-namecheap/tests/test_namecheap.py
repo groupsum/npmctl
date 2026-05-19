@@ -109,7 +109,7 @@ def test_client_lists_zones_and_records() -> None:
     assert session.calls[1]["params"]["SLD"] == "example"  # type: ignore[index]
 
 
-def test_client_set_hosts_renders_a_and_cname_records() -> None:
+def test_client_set_hosts_renders_supported_record_types() -> None:
     client = NamecheapClient(_config())
     client.session = FakeSession(
         [
@@ -125,6 +125,11 @@ def test_client_set_hosts_renders_a_and_cname_records() -> None:
         (
             {"name": "@", "type": "A", "value": "192.0.2.10", "ttl": 300},
             {"name": "www", "type": "CNAME", "value": "example.com", "ttl": 600},
+            {"name": "v6", "type": "AAAA", "value": "2001:db8::1", "ttl": 300},
+            {"name": "txt", "type": "TXT", "value": "hello", "ttl": 300},
+            {"name": "@", "type": "MX", "value": "mail.example.com", "ttl": 300, "priority": 10},
+            {"name": "_sip._tcp", "type": "SRV", "value": "10 20 5060 sip.example.com", "ttl": 300},
+            {"name": "@", "type": "CAA", "value": '0 issue "letsencrypt.org"', "ttl": 300},
         ),
     )
 
@@ -138,12 +143,25 @@ def test_client_set_hosts_renders_a_and_cname_records() -> None:
     assert params["HostName2"] == "www"
     assert params["RecordType2"] == "CNAME"
     assert params["Address2"] == "example.com"
+    assert params["RecordType3"] == "AAAA"
+    assert params["Address3"] == "2001:db8::1"
+    assert params["RecordType4"] == "TXT"
+    assert params["Address4"] == "hello"
+    assert params["RecordType5"] == "MX"
+    assert params["Address5"] == "mail.example.com"
+    assert params["MXPref5"] == "10"
+    assert params["RecordType6"] == "SRV"
+    assert params["Address6"] == "10 20 5060 sip.example.com"
+    assert params["RecordType7"] == "CAA"
+    assert params["Address7"] == '0 issue "letsencrypt.org"'
 
 
-def test_client_set_hosts_rejects_unsupported_records_and_missing_client_ip() -> None:
+def test_client_set_hosts_rejects_unsupported_records_missing_mx_priority_and_missing_client_ip() -> None:
     client = NamecheapClient(_config())
     with pytest.raises(NamecheapError, match="unsupported Namecheap DNS record type"):
-        client.set_hosts("example.com", ({"name": "@", "type": "TXT", "value": "hello"},))
+        client.set_hosts("example.com", ({"name": "@", "type": "NS", "value": "ns1.example.com"},))
+    with pytest.raises(NamecheapError, match="priority is required for MX records"):
+        client.set_hosts("example.com", ({"name": "@", "type": "MX", "value": "mail.example.com"},))
 
     missing_ip = NamecheapConfig(
         api_user="api-user",

@@ -27,6 +27,7 @@ class CloudflareRecord:
     type: str
     value: str
     ttl: int | None = None
+    priority: int | None = None
     proxied: bool | None = None
 
     @classmethod
@@ -37,6 +38,7 @@ class CloudflareRecord:
             type=str(raw.get("type", "")).upper(),
             value=str(raw.get("content", "")),
             ttl=_optional_int(raw.get("ttl")),
+            priority=_optional_int(raw.get("priority")),
             proxied=_optional_bool(raw.get("proxied")),
         )
 
@@ -47,6 +49,7 @@ class CloudflareRecord:
             "type": self.type,
             "value": self.value,
             "ttl": self.ttl,
+            "priority": self.priority,
             "proxied": self.proxied,
         }
 

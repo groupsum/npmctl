@@ -115,3 +115,42 @@ def test_provider_returns_record_dicts() -> None:
 
     assert provider.zones() == ("example.com",)
     assert provider.records("example.com")[0]["value"] == "192.0.2.10"
+
+
+def test_provider_applies_supported_record_types() -> None:
+    class Client:
+        def __init__(self) -> None:
+            self.created = []
+
+        def zones(self):
+            return ("example.com",)
+
+        def records(self, zone: str):
+            assert zone == "example.com"
+            return ()
+
+        def create_record(self, zone: str, **payload):
+            self.created.append((zone, payload))
+
+    client = Client()
+    provider = DigitalOceanDnsProvider(client)  # type: ignore[arg-type]
+    records = tuple(
+        {"name": f"r{idx}", "type": record_type, "value": value, "ttl": 300, **extra}
+        for idx, (record_type, value, extra) in enumerate(
+            [
+                ("A", "192.0.2.10", {}),
+                ("AAAA", "2001:db8::1", {}),
+                ("CNAME", "target.example.net", {}),
+                ("TXT", "hello", {}),
+                ("MX", "mail.example.com", {"priority": 10}),
+                ("SRV", "10 20 5060 sip.example.com", {}),
+                ("CAA", '0 issue "letsencrypt.org"', {}),
+            ],
+            start=1,
+        )
+    )
+
+    provider.apply_records("example.com", records)
+
+    assert [item[1]["type"] for item in client.created] == ["A", "AAAA", "CNAME", "TXT", "MX", "SRV", "CAA"]
+    assert next(item for _, item in client.created if item["type"] == "MX")["priority"] == 10

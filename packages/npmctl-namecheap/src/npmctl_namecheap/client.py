@@ -12,6 +12,7 @@ from npmctl_namecheap.errors import NamecheapError
 from npmctl_namecheap.models import NamecheapRecord, split_zone
 
 _NAMESPACE = {"nc": "http://api.namecheap.com/xml.response"}
+_SUPPORTED_RECORD_TYPES = {"A", "AAAA", "CNAME", "TXT", "MX", "SRV", "CAA"}
 
 
 class NamecheapClient:
@@ -78,8 +79,10 @@ class NamecheapClient:
 
 def _host_payload(record: dict[str, Any]) -> dict[str, str]:
     record_type = str(record.get("type", "")).upper()
-    if record_type not in {"A", "CNAME"}:
+    if record_type not in _SUPPORTED_RECORD_TYPES:
         raise NamecheapError(f"unsupported Namecheap DNS record type: {record_type}")
+    if record_type == "MX" and record.get("priority") is None:
+        raise NamecheapError("priority is required for MX records")
     name = str(record.get("name", "")).strip().lower() or "@"
     ttl = record.get("ttl", 300)
     if ttl is None:

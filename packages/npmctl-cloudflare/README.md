@@ -34,7 +34,7 @@
 - Lets DNS workflows live beside proxy and certificate desired state
 - Keeps Cloudflare API tokens out of the core CLI package
 - Supports operator diagnostics through `npmctl dns doctor`
-- Provides client helpers for Cloudflare A and CNAME record workflows
+- Provides client helpers for Cloudflare DNS record workflows
 
 ## FAQ
 
@@ -50,9 +50,9 @@
 
 **Answer:** No. `npmctl-cloudflare` is an extension package for `npmctl`, not a standalone CLI.
 
-### Can npmctl-cloudflare set A and CNAME records?
+### Can npmctl-cloudflare set DNS records?
 
-**Answer:** Yes. The Cloudflare DNS Records API supports A and CNAME records, and this package exposes helpers for create, replace, patch, and delete operations.
+**Answer:** Yes. The Cloudflare provider supports declarative A, AAAA, CNAME, TXT, MX, SRV, and CAA writes. MX records require `priority`.
 
 ### What credentials are required?
 
@@ -110,9 +110,12 @@ npmctl dns doctor --provider cloudflare
 
 ## Minimal DNS Workflow
 
-Once the provider is installed and configured, `npmctl` can validate or diagnose Cloudflare-backed DNS behavior through the base CLI:
+Once the provider is installed and configured, `npmctl` can validate, plan, apply, or diagnose Cloudflare-backed DNS behavior through the base CLI:
 
 ```bash
+npmctl validate desired-state/dns.yaml
+npmctl plan desired-state/dns.yaml --owner site-a
+npmctl apply desired-state/dns.yaml --owner site-a
 npmctl dns providers
 npmctl dns zones --provider cloudflare
 npmctl dns records --provider cloudflare --zone example.com
@@ -124,7 +127,7 @@ The provider follows the Cloudflare DNS Records API:
 
 - `GET /zones`: discover zones available to the token.
 - `GET /zones/{zone_id}/dns_records`: list DNS records in one zone.
-- `POST /zones/{zone_id}/dns_records`: create A, CNAME, and other supported records.
+- `POST /zones/{zone_id}/dns_records`: create supported DNS records.
 - `PUT /zones/{zone_id}/dns_records/{dns_record_id}`: overwrite an existing record.
 - `PATCH /zones/{zone_id}/dns_records/{dns_record_id}`: partially update an existing record.
 - `DELETE /zones/{zone_id}/dns_records/{dns_record_id}`: delete a record.
@@ -142,10 +145,12 @@ client.patch_record("example.com", str(record.record_id), value="192.0.2.11")
 client.delete_record("example.com", str(record.record_id))
 ```
 
-CNAME creation uses the same method:
+CNAME and other supported record types use the same method. MX records pass
+`priority`:
 
 ```python
 client.create_record("example.com", type="CNAME", name="app", value="target.example.net", ttl=300)
+client.create_record("example.com", type="MX", name="@", value="mail.example.com", ttl=300, priority=10)
 ```
 
 ## Safety Notes
@@ -154,7 +159,7 @@ client.create_record("example.com", type="CNAME", name="app", value="target.exam
 - Use least-privilege API tokens scoped to the intended zone.
 - Keep `CLOUDFLARE_API_TOKEN` out of desired-state files and logs.
 - Cloudflare prevents CNAME records from coexisting with A or AAAA records on the same name.
-- Use npmctl owner metadata for desired DNS records so future apply support can remain owner-scoped.
+- Use npmctl owner metadata for desired DNS records so apply remains owner-scoped.
 
 ## More Documentation
 

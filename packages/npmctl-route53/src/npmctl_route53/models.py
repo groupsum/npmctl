@@ -26,6 +26,7 @@ class Route53Record:
     type: str
     values: tuple[str, ...]
     ttl: int | None = None
+    priority: int | None = None
 
     @classmethod
     def from_mapping(cls, raw: Mapping[str, Any]) -> Route53Record:
@@ -34,11 +35,19 @@ class Route53Record:
         values = tuple(str(item.get("Value", "")) for item in records if isinstance(item, Mapping))
         if not values and isinstance(alias_target, Mapping):
             values = (str(alias_target.get("DNSName", "")),)
+        record_type = str(raw.get("Type", "")).upper()
+        priority = None
+        if record_type == "MX" and values:
+            first = values[0].split(maxsplit=1)
+            if len(first) == 2 and first[0].isdigit():
+                priority = int(first[0])
+                values = (first[1], *values[1:])
         return cls(
             name=_dns_name(str(raw.get("Name", ""))),
-            type=str(raw.get("Type", "")).upper(),
+            type=record_type,
             values=values,
             ttl=_optional_int(raw.get("TTL")),
+            priority=priority,
         )
 
     def to_dict(self) -> dict[str, str | int | tuple[str, ...] | None]:
@@ -49,6 +58,7 @@ class Route53Record:
             "value": self.values[0] if self.values else "",
             "values": self.values,
             "ttl": self.ttl,
+            "priority": self.priority,
         }
 
 

@@ -1,6 +1,6 @@
 # ADRs
 
-Generated entries: 20
+Generated entries: 21
 
 | id | number | title | status |
 | --- | --- | --- | --- |
@@ -24,3 +24,4 @@ Generated entries: 20
 | adr:1002 | 1002 | Repair-safe certificate reconciliation | draft |
 | adr:1003 | 1003 | Provider-backed DNS reconciliation is a first-class apply surface | draft |
 | adr:1004 | 1004 | DNS record ownership and delete semantics for registrar APIs | draft |
+| adr:1005 | 1005 | DNS provider writers support the operational record set | accepted |
