@@ -1,3 +1,3 @@
 """npmctl: owner-scoped controller for Nginx Proxy Manager."""
 
-__version__ = "0.3.8"
+__version__ = "0.3.9"
