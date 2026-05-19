@@ -223,14 +223,6 @@ jobs:
           name: npmctl-release-notes
           path: .tmp/release
 
-      - uses: softprops/action-gh-release@v2
-        if: inputs.publish_github_release
-        with:
-          tag_name: ${{ needs.prepare.outputs.tag_name }}
-          name: ${{ needs.prepare.outputs.release_name }}
-          body_path: .tmp/release/release-notes.md
-          files: dist/*
-
       - name: Publish distributions to PyPI with Trusted Publishing
         id: pypi-trusted-publishing
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -248,3 +240,16 @@ jobs:
           password: ${{ secrets.PYPI_API_TOKEN }}
           packages-dir: dist
           skip-existing: true
+
+      - uses: softprops/action-gh-release@v2
+        if: >
+          inputs.publish_github_release && (
+            !inputs.publish_pypi ||
+            steps.pypi-trusted-publishing.outcome == 'success' ||
+            steps.pypi-trusted-publishing.outcome == 'failure'
+          )
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag_name }}
+          name: ${{ needs.prepare.outputs.release_name }}
+          body_path: .tmp/release/release-notes.md
+          files: dist/*

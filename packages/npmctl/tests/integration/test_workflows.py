@@ -76,6 +76,12 @@ def test_workflow_trigger_and_gate_semantics() -> None:
     assert "steps.pypi-trusted-publishing.outcome == 'failure'" in token_fallback_step["if"]
     assert token_fallback_step["with"]["password"] == "${{ secrets.PYPI_API_TOKEN }}"
     assert token_fallback_step["with"]["skip-existing"] == "true"
+    gh_release_index = next(
+        index for index, step in enumerate(publish_steps) if step.get("uses", "").startswith("softprops/")
+    )
+    token_fallback_index = publish_steps.index(token_fallback_step)
+    assert gh_release_index > token_fallback_index
+    assert "inputs.publish_github_release" in publish_steps[gh_release_index]["if"]
 
     release_build = yaml.load(
         (ACTIONS / "npmctl-release-build" / "action.yml").read_text(encoding="utf-8"), Loader=yaml.BaseLoader
