@@ -21,24 +21,8 @@ The repository includes local composite actions and gated workflows.
 
 Each workflow uses concurrency groups to avoid overlapping mutable runs.
 
-## PyPI Trusted Publishing
+## PyPI Publishing
 
-The `Release` workflow publishes from `.github/workflows/release.yml` with
-`id-token: write` and the `pypi` GitHub environment. PyPI trusted publisher
-configuration is project-scoped, so every package published from this workspace
-needs a matching PyPI publisher entry:
-
-| PyPI project | GitHub owner | GitHub repository | Workflow filename | Environment |
-| --- | --- | --- | --- | --- |
-| `npmctl` | `groupsum` | `npmctl` | `release.yml` | `pypi` |
-| `npmctl-namecheap` | `groupsum` | `npmctl` | `release.yml` | `pypi` |
-| `npmctl-cloudflare` | `groupsum` | `npmctl` | `release.yml` | `pypi` |
-| `npmctl-digitalocean` | `groupsum` | `npmctl` | `release.yml` | `pypi` |
-| `npmctl-godaddy` | `groupsum` | `npmctl` | `release.yml` | `pypi` |
-| `npmctl-route53` | `groupsum` | `npmctl` | `release.yml` | `pypi` |
-
-The publish job first uses `pypa/gh-action-pypi-publish@release/v1` without
-credentials, which is the trusted publishing path. The token fallback is only
-for projects that have not yet been configured in PyPI. When PyPI publishing is
-enabled, the GitHub Release step runs after PyPI succeeds so failed package
-publication does not leave a new GitHub-only release.
+The `Release` workflow can publish Python distributions after the required
+release gates pass. Publication happens before the GitHub Release step so a
+package publish failure does not leave a GitHub-only release artifact behind.
