@@ -10,6 +10,7 @@
   <a href="https://pypi.org/project/npmctl-namecheap/"><img src="https://img.shields.io/pypi/v/npmctl-namecheap.svg" alt="PyPI version"></a>
   <a href="https://pypi.org/project/npmctl-namecheap/"><img src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue" alt="Python 3.10, 3.11, 3.12, 3.13, and 3.14"></a>
   <a href="https://github.com/groupsum/npmctl/actions/workflows/ci.yml"><img src="https://github.com/groupsum/npmctl/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
+  <a href="https://github.com/groupsum/npmctl/blob/master/.ssot/registry.json"><img src="https://img.shields.io/badge/SSOT-governed-2f6f4e.svg" alt="SSOT governed"></a>
   <a href="https://github.com/groupsum/npmctl/blob/master/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache 2.0 License"></a>
 </p>
 

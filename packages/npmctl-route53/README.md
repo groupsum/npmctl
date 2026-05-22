@@ -10,6 +10,7 @@
   <a href="https://pypi.org/project/npmctl-route53/"><img src="https://img.shields.io/pypi/v/npmctl-route53.svg" alt="PyPI version"></a>
   <a href="https://pypi.org/project/npmctl-route53/"><img src="https://img.shields.io/pypi/pyversions/npmctl-route53.svg" alt="Python versions"></a>
   <a href="https://github.com/groupsum/npmctl/actions/workflows/ci.yml"><img src="https://github.com/groupsum/npmctl/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
+  <a href="https://github.com/groupsum/npmctl/blob/master/.ssot/registry.json"><img src="https://img.shields.io/badge/SSOT-governed-2f6f4e.svg" alt="SSOT governed"></a>
   <a href="https://github.com/groupsum/npmctl/blob/master/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache 2.0 License"></a>
 </p>
 
