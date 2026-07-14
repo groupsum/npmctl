@@ -1,22 +1,37 @@
 ---
 apiVersion: npmctl.com/v1
-schemaVersion: 2
-access_lists:
-  - name: private-admins
-    api_payload:
-      satisfy_any: 0
-      items: []
-      clients: []
-    meta:
-      managed_by: npmctl
-      owner: workload-a
-      resource_id: acl.private-admins
-proxy_hosts:
-  - domain_names: [admin.example.com]
-    forward_host: admin
-    forward_port: 8080
-    access_list_ref: acl.private-admins
-    meta:
-      managed_by: npmctl
-      owner: workload-a
-      resource_id: proxy.admin
+kind: DesiredState
+schemaVersion: 3
+metadata:
+  name: workload-a-desired-state
+  owner: workload-a
+spec:
+  proxyHosts:
+    - domain_names:
+        - admin.example.com
+      forward_host: admin
+      forward_port: 8080
+      access_list_ref: acl.private-admins
+      meta:
+        managed_by: npmctl
+        owner: workload-a
+        resource_id: proxy.admin
+  certificates: []
+  accessLists:
+    - name: private-admins
+      api_payload:
+        satisfy_any: 0
+        items: []
+        clients: []
+      meta:
+        managed_by: npmctl
+        owner: workload-a
+        resource_id: acl.private-admins
+  redirectionHosts: []
+  deadHosts: []
+  streams: []
+  users: []
+  settings: []
+  dnsRecords: []
+  pluginResources: []
+  externalCertificates: []

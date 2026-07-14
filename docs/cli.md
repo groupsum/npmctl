@@ -14,6 +14,10 @@
 - `npmctl doctor`: diagnose config, API reachability, and capabilities.
 - `npmctl env`: show redacted environment diagnostics.
 - `npmctl version --json`: show machine-readable package metadata.
+- `npmctl contract list|show|check`: inspect independent contract compatibility.
+- `npmctl repo validate|status`: validate a repository manifest and resolve an environment.
+- `npmctl lock check EXPECTED ACTUAL`: compare reproducibility pins.
+- `npmctl artifact inspect|digest`: validate and identify immutable artifacts.
 - `npmctl completion bash|powershell|zsh`: generate shell completion output.
 - `npmctl audit-log`: read NPM audit log entries.
 - `npmctl compliance artifacts --output-dir DIR`: generate SBOM, provenance, scan, and gate artifacts.
@@ -33,3 +37,12 @@
 - `--config FILE`: load `[npmctl]` TOML configuration.
 - `--validate-output`: validate plan output shape.
 - `--backup-dir DIR`, `--report PATH`, `--rollback-plan PATH`, `--audit-log PATH`: write apply artifacts.
+
+## Reviewed artifacts
+
+Use `npmctl plan PATH --artifact-out PLAN --repository ORG/REPO
+--environment production --commit SHA` to persist exact ordered operations.
+Apply the reviewed result with `npmctl apply --artifact PLAN` and the same
+binding values. Changed commits, live state, NPM API profiles, environments,
+repositories, or expiry timestamps fail before
+mutation.

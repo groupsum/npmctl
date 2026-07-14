@@ -1,0 +1,25 @@
+schema_version: "0.2.0"
+kind: "adr"
+id: "adr:1015"
+number: 1015
+slug: "plugin-contract-migration-participation"
+title: "Require plugins to participate in contract compatibility and migration registration"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Context: provider plugins and custom resource kinds extend npmctl contracts beyond the core package. Decision: plugins SHALL declare supported contract versions, register custom resource schemas and adjacent migration steps, and fail closed on missing, future, or conflicting migration paths."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:45:34Z"
+    note: "Proposed follow-on decision for npmctl versioning and migration safety."
+    status: "draft"
+  -
+    status: "accepted"
+    note: "Accepted with the npmctl 0.4 versioning and migration implementation."
+    at: "2026-07-14T03:26:16Z"
+references: []
+body: |-
+  Context: provider plugins and custom resource kinds extend npmctl contracts beyond the core package. Decision: plugins SHALL declare supported contract versions, register custom resource schemas and adjacent migration steps, and fail closed on missing, future, or conflicting migration paths.

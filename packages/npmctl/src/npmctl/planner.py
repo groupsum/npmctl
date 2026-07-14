@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Any, Literal
 
 from npmctl.models import (
@@ -105,6 +105,7 @@ class PlanOperation:
             "kind": self.kind.value,
             "owner": self.owner,
             "resource_id": self.resource_id,
+            "desired": asdict(self.desired) if self.desired else None,
             "existing": self.existing.to_dict() if self.existing else None,
             "reason": self.reason,
             "diff": self.diff,

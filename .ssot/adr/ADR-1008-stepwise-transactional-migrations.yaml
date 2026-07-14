@@ -1,0 +1,25 @@
+schema_version: "0.2.0"
+kind: "adr"
+id: "adr:1008"
+number: 1008
+slug: "stepwise-transactional-migrations"
+title: "Use explicit stepwise and transactional migrations"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Context: normalizing any historical input directly to current obscures transformations and can partially rewrite repositories. Decision: migrations SHALL traverse an explicit version graph with preconditions, postconditions, idempotency, and transactional multi-file writes. Automatic migration during validate, plan, or apply is prohibited."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:31:16Z"
+    note: "Proposed npmctl versioning and migration architecture."
+    status: "draft"
+  -
+    status: "accepted"
+    note: "Accepted with the npmctl 0.4 versioning and migration implementation."
+    at: "2026-07-14T03:26:14Z"
+references: []
+body: |-
+  Context: normalizing any historical input directly to current obscures transformations and can partially rewrite repositories. Decision: migrations SHALL traverse an explicit version graph with preconditions, postconditions, idempotency, and transactional multi-file writes. Automatic migration during validate, plan, or apply is prohibited.

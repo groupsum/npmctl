@@ -1,0 +1,29 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1016"
+number: 1016
+slug: "artifact-signing-trust-policy"
+title: "Artifact signing and trust policy"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Canonical PlanArtifact, NpmctlMigration, LiveStateSnapshot, and ApplyReport identities SHALL support signatures containing algorithm, key identifier, signer identity, and signing time. Verification SHALL occur before privileged use. Trust roots, unsigned-artifact policy, rotation, revocation, and invalid-signature behavior SHALL be explicit and fail closed."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:45:34Z"
+    note: "Proposed follow-on contract for npmctl versioning and migration safety."
+    status: "draft"
+  -
+    status: "accepted"
+    note: "Implemented and covered by the npmctl 0.4 verification suite."
+    at: "2026-07-14T03:26:18Z"
+references: []
+body: |-
+  Canonical PlanArtifact, NpmctlMigration, LiveStateSnapshot, and ApplyReport identities SHALL support signatures containing algorithm, key identifier, signer identity, and signing time. Verification SHALL occur before privileged use. Trust roots, unsigned-artifact policy, rotation, revocation, and invalid-signature behavior SHALL be explicit and fail closed.
+spec_kind: "normative"
+adr_ids:
+  - "adr:1012"
+  - "adr:1007"

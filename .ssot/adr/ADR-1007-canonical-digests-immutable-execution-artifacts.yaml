@@ -1,0 +1,25 @@
+schema_version: "0.2.0"
+kind: "adr"
+id: "adr:1007"
+number: 1007
+slug: "canonical-digests-immutable-execution-artifacts"
+title: "Bind execution to canonical digests and immutable reviewed artifacts"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Context: applying mutable branch content after review permits unreviewed drift. Decision: npmctl SHALL canonicalize contract documents, compute stable content digests, and apply the exact immutable plan artifact that was reviewed. Consequences: formatting does not alter identity, stale or tampered artifacts are rejected, and execution is traceable to source and live-state fingerprints."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:31:16Z"
+    note: "Proposed npmctl versioning and migration architecture."
+    status: "draft"
+  -
+    status: "accepted"
+    note: "Accepted with the npmctl 0.4 versioning and migration implementation."
+    at: "2026-07-14T03:26:13Z"
+references: []
+body: |-
+  Context: applying mutable branch content after review permits unreviewed drift. Decision: npmctl SHALL canonicalize contract documents, compute stable content digests, and apply the exact immutable plan artifact that was reviewed. Consequences: formatting does not alter identity, stale or tampered artifacts are rejected, and execution is traceable to source and live-state fingerprints.

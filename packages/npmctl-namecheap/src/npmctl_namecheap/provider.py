@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from npmctl.providers import DnsMutationContext, ProviderCapabilities, ProviderMutationResult, dns_records_digest
+
+from npmctl_namecheap.capabilities import CAPABILITIES
 from npmctl_namecheap.client import NamecheapClient
 from npmctl_namecheap.config import NamecheapConfig
 
@@ -26,5 +29,21 @@ class NamecheapDnsProvider:
     def records(self, zone: str) -> tuple[dict[str, object], ...]:
         return tuple(record.to_dict() for record in self.client.records(zone))
 
-    def apply_records(self, zone: str, records: tuple[dict[str, object], ...]) -> None:
+    def capabilities(self) -> ProviderCapabilities:
+        return CAPABILITIES
+
+    def apply_records(
+        self,
+        zone: str,
+        records: tuple[dict[str, object], ...],
+        context: DnsMutationContext | None = None,
+    ) -> ProviderMutationResult:
         self.client.set_hosts(zone, records)
+        observed = self.records(zone)
+        return ProviderMutationResult(
+            self.name,
+            context.operation_id if context else f"dns:{zone}",
+            None,
+            dns_records_digest(observed),
+            dns_records_digest(observed) == dns_records_digest(records),
+        )

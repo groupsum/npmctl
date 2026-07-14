@@ -1,41 +1,54 @@
 ---
 apiVersion: npmctl.com/v1
-schemaVersion: 2
-certificates:
-  - name: wildcard-example
-    domain_names:
-      - "*.example.com"
-      - example.com
-    certificate_type: letsencrypt
-    api_payload:
-      provider: letsencrypt
-    meta:
-      managed_by: npmctl
-      owner: workload-a
-      resource_id: cert.wildcard-example
-access_lists:
-  - name: private-admins
-    api_payload:
-      satisfy_any: 0
-      items: []
-      clients: []
-    meta:
-      managed_by: npmctl
-      owner: workload-a
-      resource_id: acl.private-admins
-proxy_hosts:
-  - domain_names:
-      - app.example.com
-    forward_scheme: http
-    forward_host: app
-    forward_port: 3000
-    certificate_ref: cert.wildcard-example
-    access_list_ref: acl.private-admins
-    ssl_forced: 1
-    http2_support: 1
-    allow_websocket_upgrade: 1
-    block_exploits: 1
-    meta:
-      managed_by: npmctl
-      owner: workload-a
-      resource_id: proxy.app
+kind: DesiredState
+schemaVersion: 3
+metadata:
+  name: workload-a-desired-state
+  owner: workload-a
+spec:
+  proxyHosts:
+    - domain_names:
+        - app.example.com
+      forward_scheme: http
+      forward_host: app
+      forward_port: 3000
+      certificate_ref: cert.wildcard-example
+      access_list_ref: acl.private-admins
+      ssl_forced: 1
+      http2_support: 1
+      allow_websocket_upgrade: 1
+      block_exploits: 1
+      meta:
+        managed_by: npmctl
+        owner: workload-a
+        resource_id: proxy.app
+  certificates:
+    - name: wildcard-example
+      domain_names:
+        - '*.example.com'
+        - example.com
+      certificate_type: letsencrypt
+      api_payload:
+        provider: letsencrypt
+      meta:
+        managed_by: npmctl
+        owner: workload-a
+        resource_id: cert.wildcard-example
+  accessLists:
+    - name: private-admins
+      api_payload:
+        satisfy_any: 0
+        items: []
+        clients: []
+      meta:
+        managed_by: npmctl
+        owner: workload-a
+        resource_id: acl.private-admins
+  redirectionHosts: []
+  deadHosts: []
+  streams: []
+  users: []
+  settings: []
+  dnsRecords: []
+  pluginResources: []
+  externalCertificates: []

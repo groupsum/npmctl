@@ -11,8 +11,9 @@ import yaml
 from npmctl.errors import MigrationError
 from npmctl.loader import EXPECTED_API_VERSION, SUPPORTED_EXTENSIONS
 from npmctl.migrations.base import MigrationResult
+from npmctl.migrations.builtin import BUILTIN_MIGRATIONS
 
-CURRENT_SCHEMA_VERSION = 2
+CURRENT_SCHEMA_VERSION = 3
 
 
 def needs_migration(document: dict[str, Any]) -> bool:
@@ -29,15 +30,11 @@ def migrate_document(document: dict[str, Any]) -> tuple[dict[str, Any], bool, in
     before = document.get("schemaVersion")
     if before == CURRENT_SCHEMA_VERSION and document.get("apiVersion") == EXPECTED_API_VERSION:
         return dict(document), False, CURRENT_SCHEMA_VERSION
-    if before not in (None, 0, 1):
+    if before not in (None, 0, 1, 2):
         raise MigrationError(f"unsupported desired-state schemaVersion: {before}")
-    migrated = dict(document)
-    migrated.setdefault("proxy_hosts", [])
-    migrated.setdefault("certificates", [])
-    migrated.setdefault("access_lists", [])
-    migrated.setdefault("dns_records", [])
-    migrated["apiVersion"] = EXPECTED_API_VERSION
-    migrated["schemaVersion"] = CURRENT_SCHEMA_VERSION
+    if before is not None and document.get("apiVersion") != EXPECTED_API_VERSION:
+        raise MigrationError(f"apiVersion must be {EXPECTED_API_VERSION!r} for versioned desired state")
+    migrated = BUILTIN_MIGRATIONS.migrate("DesiredState", document, to_version=CURRENT_SCHEMA_VERSION)
     return migrated, True, before if isinstance(before, int) else None
 
 

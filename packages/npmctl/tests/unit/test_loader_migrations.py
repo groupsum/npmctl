@@ -185,16 +185,51 @@ def test_migrate_legacy_document_adds_v1_headers() -> None:
     assert changed is True
     assert before is None
     assert migrated["apiVersion"] == "npmctl.com/v1"
-    assert migrated["schemaVersion"] == 2
-    assert migrated["dns_records"] == []
+    assert migrated["schemaVersion"] == 3
+    assert migrated["kind"] == "DesiredState"
+    assert migrated["spec"]["dnsRecords"] == []
 
 
 def test_migrate_v1_document_adds_dns_records() -> None:
     migrated, changed, before = migrate_document({"apiVersion": "npmctl.com/v1", "schemaVersion": 1})
     assert changed is True
     assert before == 1
-    assert migrated["schemaVersion"] == 2
-    assert migrated["dns_records"] == []
+    assert migrated["schemaVersion"] == 3
+    assert migrated["kind"] == "DesiredState"
+    assert migrated["spec"]["dnsRecords"] == []
+
+
+def test_load_v3_envelope_and_reject_invalid_v3(tmp_path: Path) -> None:
+    path = tmp_path / "desired.yaml"
+    document = {
+        "apiVersion": "npmctl.com/v1",
+        "kind": "DesiredState",
+        "schemaVersion": 3,
+        "metadata": {"name": "site", "owner": "owner"},
+        "spec": {
+            "proxyHosts": [
+                {
+                    "domain_names": ["app.example.com"],
+                    "forward_host": "app",
+                    "forward_port": 3000,
+                    "meta": {"managed_by": "npmctl", "owner": "owner", "resource_id": "proxy.app"},
+                }
+            ]
+        },
+    }
+    path.write_text(yaml.safe_dump(document), encoding="utf-8")
+    state = load_desired_state(path)
+    assert state.schema_version == 3 and state.proxy_hosts[0].identity.resource_id == "proxy.app"
+    for update, message in (
+        ({"kind": "Bad"}, "kind"),
+        ({"spec": []}, "spec"),
+        ({"spec": {"unknown": []}}, "unsupported fields"),
+        ({"schemaVersion": "3"}, "integer"),
+        ({"schemaVersion": True}, "integer"),
+    ):
+        path.write_text(yaml.safe_dump(document | update), encoding="utf-8")
+        with pytest.raises(ValidationError, match=message):
+            load_desired_state(path)
 
 
 def test_migrate_path_check_and_write(tmp_path: Path) -> None:

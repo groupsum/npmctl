@@ -37,6 +37,8 @@
 - Safe reference handling for certificates and access lists
 - Fail-closed behavior when the target NPM schema does not support a required operation
 - CLI-first workflows that fit GitOps, CI, and controlled repair operations
+- Independently versioned contracts, reproducibility lockfiles, and immutable reviewed plan artifacts
+- Transactional adjacent migrations with backups, chained ledgers, leases, and explicit recovery classification
 
 ## FAQ
 

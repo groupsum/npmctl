@@ -1,0 +1,28 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1009"
+number: 1009
+slug: "canonical-serialization-lockfile"
+title: "Canonical serialization and lockfile"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "npmctl SHALL define deterministic canonical serialization and SHA-256 digest computation independent of YAML formatting and key order. npmctl.lock.yaml SHALL pin tool, provider, API-profile, contract, desired-state digest, and source revision inputs required for reproducible planning."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:31:18Z"
+    note: "Proposed contract for npmctl versioning and migration work."
+    status: "draft"
+  -
+    status: "accepted"
+    note: "Implemented and covered by the npmctl 0.4 verification suite."
+    at: "2026-07-14T03:26:16Z"
+references: []
+body: |-
+  npmctl SHALL define deterministic canonical serialization and SHA-256 digest computation independent of YAML formatting and key order. npmctl.lock.yaml SHALL pin tool, provider, API-profile, contract, desired-state digest, and source revision inputs required for reproducible planning.
+spec_kind: "normative"
+adr_ids:
+  - "adr:1007"

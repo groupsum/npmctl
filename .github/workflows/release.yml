@@ -47,6 +47,7 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
           fetch-depth: 0
+      - uses: ./.github/actions/setup-uv-python
 
       - name: Resolve target ref
         id: target
@@ -134,6 +135,32 @@ jobs:
           echo "tag-name=v${{ inputs.version }}" >> "$GITHUB_OUTPUT"
           echo "release-name=npmctl v${{ inputs.version }}" >> "$GITHUB_OUTPUT"
           echo "release-notes=$notes" >> "$GITHUB_OUTPUT"
+
+      - name: Verify synchronized package versions and publish compatibility matrix
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          uv run python - <<'PY'
+          import os
+          import tomllib
+          from pathlib import Path
+
+          expected = os.environ["VERSION"]
+          paths = [Path("pyproject.toml"), *sorted(Path("packages").glob("*/pyproject.toml"))]
+          versions = {str(path): tomllib.loads(path.read_text(encoding="utf-8"))["project"]["version"] for path in paths}
+          mismatches = {path: value for path, value in versions.items() if value != expected}
+          if mismatches:
+              raise SystemExit(f"workspace versions are not synchronized: {mismatches}")
+          PY
+          uv run npmctl --output json contract list > contract-compatibility-matrix.json
+          uv run npmctl migrate examples/desired-state --check
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npmctl-contract-compatibility
+          path: contract-compatibility-matrix.json
 
       - uses: actions/upload-artifact@v4
         with:

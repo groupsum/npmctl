@@ -16,5 +16,9 @@ runs:
       run: uv run pytest
     - shell: bash
       run: |
+        uv run npmctl --output json contract list > .tmp-contract-matrix.json
+        uv run npmctl migrate examples/desired-state --check
+    - shell: bash
+      run: |
         uv run python -m npmctl compliance artifacts --output-dir .tmp/compliance --source-dir .
         uv run python -m npmctl compliance gate --artifact-dir .tmp/compliance

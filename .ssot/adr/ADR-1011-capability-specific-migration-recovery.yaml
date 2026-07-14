@@ -1,0 +1,25 @@
+schema_version: "0.2.0"
+kind: "adr"
+id: "adr:1011"
+number: 1011
+slug: "capability-specific-migration-recovery"
+title: "Use capability-specific rollback or forward-repair recovery"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Context: not every external mutation is reversible, especially complete-zone DNS writes. Decision: each migration SHALL declare reversibility. Rollback is available only with a verified inverse; otherwise npmctl SHALL capture a prechange snapshot and use forward repair with post-write verification."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:31:17Z"
+    note: "Proposed npmctl versioning and migration architecture."
+    status: "draft"
+  -
+    status: "accepted"
+    note: "Accepted with the npmctl 0.4 versioning and migration implementation."
+    at: "2026-07-14T03:26:14Z"
+references: []
+body: |-
+  Context: not every external mutation is reversible, especially complete-zone DNS writes. Decision: each migration SHALL declare reversibility. Rollback is available only with a verified inverse; otherwise npmctl SHALL capture a prechange snapshot and use forward repair with post-write verification.

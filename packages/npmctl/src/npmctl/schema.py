@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from npmctl.contracts import semantic_digest
 from npmctl.errors import CapabilityError, ValidationError
 from npmctl.models import ResourceKind
 
@@ -135,6 +136,13 @@ class Capabilities:
             "settings": self.settings.to_dict(),
             "audit_log": self.audit_log.to_dict(),
         }
+
+    @property
+    def api_profile(self) -> str:
+        """Stable identity for the observed NPM API surface."""
+
+        version = self.schema_version or "unknown"
+        return f"npm:{version}:{semantic_digest(self.to_dict())[:16]}"
 
 
 def _detect(paths: dict[str, Any], collection: str) -> ResourceCapabilities:

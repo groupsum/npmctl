@@ -1,0 +1,28 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1013"
+number: 1013
+slug: "provider-capability-api-profile-negotiation"
+title: "Provider capability and API-profile negotiation"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Provider adapters SHALL publish a versioned capability description covering resources, record types, mutation model, locking, credentials, readback, and recovery. NPM targets SHALL expose a recognized API profile. Planning SHALL record negotiated capabilities and apply SHALL reject incompatible or changed profiles."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:31:20Z"
+    note: "Proposed contract for npmctl versioning and migration work."
+    status: "draft"
+  -
+    status: "accepted"
+    note: "Implemented and covered by the npmctl 0.4 verification suite."
+    at: "2026-07-14T03:26:17Z"
+references: []
+body: |-
+  Provider adapters SHALL publish a versioned capability description covering resources, record types, mutation model, locking, credentials, readback, and recovery. NPM targets SHALL expose a recognized API profile. Planning SHALL record negotiated capabilities and apply SHALL reject incompatible or changed profiles.
+spec_kind: "normative"
+adr_ids:
+  - "adr:1010"

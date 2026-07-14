@@ -1,0 +1,29 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1011"
+number: 1011
+slug: "migration-graph-manifest-ledger"
+title: "Migration graph, manifest, execution, and ledger"
+status: "in_review"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Migrations SHALL use explicit adjacent version steps with preconditions, transformations, validation, reversibility classification, and checkpoints. Multi-file migration SHALL stage and validate all output before atomic replacement. Execution SHALL produce an append-only ledger and support idempotent resume."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:31:19Z"
+    note: "Proposed contract for npmctl versioning and migration work."
+    status: "draft"
+  -
+    status: "in_review"
+    note: "Core contract implemented; remaining advanced lifecycle behavior stays explicitly planned."
+    at: "2026-07-14T03:26:18Z"
+references: []
+body: |-
+  Migrations SHALL use explicit adjacent version steps with preconditions, transformations, validation, reversibility classification, and checkpoints. Multi-file migration SHALL stage and validate all output before atomic replacement. Execution SHALL produce an append-only ledger and support idempotent resume.
+spec_kind: "normative"
+adr_ids:
+  - "adr:1008"
+  - "adr:1011"

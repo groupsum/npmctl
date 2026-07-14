@@ -3,8 +3,12 @@
 npmctl DNS providers are Python extension packages registered through the
 `npmctl.dns_providers` entry point group. The base provider contract requires
 `name`, `zones()`, and `records(zone)`. Providers that participate in
-`npmctl apply` must also expose `apply_records(zone, records)` so the core DNS
-reconciler can fail closed when a provider is read-only.
+`npmctl apply` must also expose versioned `capabilities()` and
+`apply_records(zone, records, context)`. A writer returns a
+`ProviderMutationResult` containing the operation identity, provider request
+identity when available, normalized readback digest, and verification result.
+Legacy two-argument writers remain available through a conservative 0.x
+adapter.
 
 ## Supported provider packages
 
@@ -81,3 +85,5 @@ type.
   records returned by the provider are preserved unless they carry matching
   npmctl ownership metadata and are omitted from desired state during
   owner-scoped pruning.
+- Modern providers must read the zone back after mutation; an unverified result
+  fails the apply instead of being reported as success.

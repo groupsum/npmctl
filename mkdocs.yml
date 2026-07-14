@@ -6,6 +6,13 @@ repo_url: https://github.com/example/npmctl
 nav:
   - Home: README.md
   - DNS providers: docs/dns-providers.md
+  - Contracts: docs/contracts.md
+  - Repository manifest: docs/repository-manifest.md
+  - Plan artifacts: docs/plan-artifacts.md
+  - Migration manifests: docs/migration-manifests.md
+  - Migration recovery: docs/migration-recovery.md
+  - Provider capabilities: docs/provider-capabilities.md
+  - Artifact trust: docs/artifact-trust.md
   - API subset: docs/specs/npmctl-openapi-subset.md
   - SSOT: docs/ssot/index.md
   - SEO overview: docs/seo/answer-engine-overview.md

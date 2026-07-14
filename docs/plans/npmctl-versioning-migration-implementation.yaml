@@ -1,0 +1,483 @@
+---
+apiVersion: npmctl.com/v1
+kind: ProductImplementationPlan
+schemaVersion: 1
+
+metadata:
+  name: npmctl-versioning-migration
+  repository: groupsum/npmctl
+  status: proposed
+  baselinePackageVersion: 0.3.10
+  sourceOfTruth:
+    adrs: [adr:1006, adr:1007, adr:1008, adr:1009, adr:1010, adr:1011, adr:1012, adr:1013, adr:1014, adr:1015]
+    specs: [spc:1008, spc:1009, spc:1010, spc:1011, spc:1012, spc:1013, spc:1014, spc:1015, spc:1016, spc:1017, spc:1018, spc:1019, spc:1020]
+
+strategy:
+  newDistributions: []
+  rationale: >-
+    Keep contracts, artifacts, and migration execution in the npmctl core
+    distribution until the public contracts stabilize. Do not introduce a
+    separately versioned npmctl-contracts distribution during the pre-1.0
+    compatibility transition.
+  packageVersioning:
+    workspacePackagesRemainSynchronized: true
+    contractVersionsRemainIndependent: true
+  releases:
+    - version: 0.4.0
+      scope: contract registry, repository manifest, canonical digests, command result
+    - version: 0.5.0
+      scope: immutable plan artifacts, lockfile, apply-by-artifact, staleness checks
+    - version: 0.6.0
+      scope: stepwise transactional migrations, ledger, resume, verification
+    - version: 0.7.0
+      scope: live import, migration-only adoption/delete, provider capabilities, leases
+    - version: 0.8.0
+      scope: artifact signing, redaction, retention, plugin migrations
+    - version: 1.0.0
+      scope: remove deprecated direct mutation paths and freeze compatibility policy
+
+packages:
+  - package: packages/npmctl
+    action: update
+    responsibilities:
+      - contract registry and compatibility policy
+      - canonical serialization and digests
+      - repository manifests and lockfiles
+      - immutable plan, snapshot, migration, and apply-report artifacts
+      - migration planning, execution, recovery, leases, and ledgers
+      - stable CLI automation envelopes and exit codes
+      - plugin contract and migration registration
+
+  - package: packages/npmctl-namecheap
+    action: update
+    responsibilities:
+      - declare complete-zone mutation capabilities
+      - return mutation/readback results
+      - support zone-scoped operation correlation and forward repair
+
+  - package: packages/npmctl-cloudflare
+    action: update
+    responsibilities:
+      - declare record-level mutation and readback capabilities
+      - propagate provider request identifiers when available
+
+  - package: packages/npmctl-route53
+    action: update
+    responsibilities:
+      - declare change-batch and readback capabilities
+      - expose AWS change identifiers for correlation
+
+  - package: packages/npmctl-digitalocean
+    action: update
+    responsibilities:
+      - declare record-level mutation and readback capabilities
+      - expose request/result correlation where available
+
+  - package: packages/npmctl-godaddy
+    action: update
+    responsibilities:
+      - declare record-set replacement capabilities
+      - expose readback and recovery behavior
+
+coreModules:
+  additions:
+    - path: packages/npmctl/src/npmctl/contracts/types.py
+      implements:
+        - ContractKind and ContractVersion datatypes
+        - read/write support ranges
+        - document envelope metadata
+    - path: packages/npmctl/src/npmctl/contracts/registry.py
+      implements:
+        - registration and lookup by kind/schemaVersion
+        - current/readable/writable contract matrices
+        - duplicate registration rejection
+    - path: packages/npmctl/src/npmctl/contracts/compatibility.py
+      implements:
+        - future-version rejection
+        - deprecation warnings and strict mode
+        - no-implicit-migration enforcement
+    - path: packages/npmctl/src/npmctl/contracts/canonical.py
+      implements:
+        - deterministic JSON-compatible normalization
+        - stable key, collection, enum, date, and numeric handling
+        - SHA-256 semantic digests
+    - path: packages/npmctl/src/npmctl/contracts/builtin.py
+      implements:
+        - built-in registrations for DesiredState, NpmctlRepository, NpmctlLock,
+          PlanArtifact, LiveStateSnapshot, NpmctlMigration, ApplyReport,
+          ProviderCapabilities, and CommandResult
+    - path: packages/npmctl/src/npmctl/contracts/__init__.py
+      implements: [stable public contract-registry exports]
+
+    - path: packages/npmctl/src/npmctl/repository.py
+      implements:
+        - NpmctlRepository schema-1 model and loader
+        - canonical .npmctl layout validation
+        - environment and owner isolation
+        - desired-state reference resolution
+    - path: packages/npmctl/src/npmctl/lockfile.py
+      implements:
+        - npmctl.lock.yaml model
+        - resolution of tool, provider, contract, API-profile, commit, and input pins
+        - write/check and reproducibility comparison
+
+    - path: packages/npmctl/src/npmctl/artifacts/models.py
+      implements:
+        - PlanArtifact, LiveStateSnapshot, ApplyReport, and signature envelope models
+    - path: packages/npmctl/src/npmctl/artifacts/codec.py
+      implements:
+        - versioned YAML/JSON read and write
+        - canonical digest calculation
+        - atomic artifact writes
+    - path: packages/npmctl/src/npmctl/artifacts/plan.py
+      implements:
+        - deterministic artifact construction from a side-effect-free Plan
+        - source, environment, desired-state, live-state, provider, and target binding
+        - expiry and staleness validation
+    - path: packages/npmctl/src/npmctl/artifacts/signing.py
+      implements:
+        - optional Ed25519 signing and verification
+        - trusted key, rotation, and revocation policy
+        - unsigned-artifact environment policy
+    - path: packages/npmctl/src/npmctl/artifacts/redaction.py
+      implements:
+        - field-policy redaction
+        - sensitive-data minimization
+        - safe log and error rendering
+    - path: packages/npmctl/src/npmctl/artifacts/retention.py
+      implements:
+        - expiry and retention evaluation
+        - safe disposal selection without deleting by default
+    - path: packages/npmctl/src/npmctl/artifacts/__init__.py
+      implements: [stable artifact API exports]
+
+    - path: packages/npmctl/src/npmctl/providers.py
+      implements:
+        - ProviderCapabilities and mutation-model datatypes
+        - DnsMutationContext and ProviderMutationResult
+        - capability negotiation and API-profile pinning
+
+    - path: packages/npmctl/src/npmctl/migrations/graph.py
+      implements:
+        - adjacent migration-step registration
+        - deterministic path resolution
+        - ambiguous, missing, cyclic, and duplicate path rejection
+    - path: packages/npmctl/src/npmctl/migrations/manifest.py
+      implements:
+        - NpmctlMigration schema-1 model
+        - source/target digests, scope, policy, approvals, checkpoints, and recovery
+    - path: packages/npmctl/src/npmctl/migrations/planner.py
+      implements:
+        - side-effect-free schema, repository, import, adoption, transfer, prune,
+          delete, provider, and API-profile migration planning
+    - path: packages/npmctl/src/npmctl/migrations/transaction.py
+      implements:
+        - stage-all, validate-all, backup, and atomic-replace filesystem transaction
+        - failure injection seams and cleanup
+    - path: packages/npmctl/src/npmctl/migrations/executor.py
+      implements:
+        - execute exact reviewed migration manifest
+        - idempotent checkpoints and mutation guards
+        - apply/verify/resume orchestration
+    - path: packages/npmctl/src/npmctl/migrations/ledger.py
+      implements:
+        - append-only JSON-lines migration ledger
+        - actor, commit, artifact digest, operation, provider request, and result records
+        - tamper-evident chained entry digests
+    - path: packages/npmctl/src/npmctl/migrations/leases.py
+      implements:
+        - scoped local lease backend
+        - lease expiry, renewal, stale-owner rejection, and takeover policy
+        - extensible LeaseBackend protocol for shared runners
+    - path: packages/npmctl/src/npmctl/migrations/recovery.py
+      implements:
+        - reversible versus forward-repair-only classification
+        - verified inverse execution
+        - snapshot-based repair planning
+    - path: packages/npmctl/src/npmctl/migrations/import_live.py
+      implements:
+        - owned, matching-unmanaged, drifting-unmanaged, foreign, and ambiguous classification
+        - proposed desired state and adoption manifest generation without mutation
+    - path: packages/npmctl/src/npmctl/migrations/builtin/desired_state_v1_v2.py
+      implements: [the current legacy-to-v2 behavior as an explicit adjacent step]
+    - path: packages/npmctl/src/npmctl/migrations/builtin/desired_state_v2_v3.py
+      implements: [kind/metadata/spec envelope migration and stable resource identities]
+    - path: packages/npmctl/src/npmctl/migrations/builtin/repository_v0_v1.py
+      implements: [canonical .npmctl repository-layout migration]
+    - path: packages/npmctl/src/npmctl/migrations/builtin/__init__.py
+      implements: [built-in migration-step registration]
+
+    - path: packages/npmctl/src/npmctl/commands/contracts.py
+      implements: [contract list, show, and check handlers]
+    - path: packages/npmctl/src/npmctl/commands/repository.py
+      implements: [repo init, validate, and status handlers]
+    - path: packages/npmctl/src/npmctl/commands/lock.py
+      implements: [lock write and check handlers]
+    - path: packages/npmctl/src/npmctl/commands/artifacts.py
+      implements: [artifact inspect, digest, sign, and verify handlers]
+    - path: packages/npmctl/src/npmctl/commands/migrations.py
+      implements: [migrate plan, apply, status, verify, resume, rollback, and repair handlers]
+    - path: packages/npmctl/src/npmctl/commands/import_live.py
+      implements: [non-mutating live import handler]
+    - path: packages/npmctl/src/npmctl/commands/__init__.py
+      implements: [command-handler exports]
+
+  updates:
+    - path: packages/npmctl/src/npmctl/loader.py
+      changes:
+        - replace EXPECTED_SCHEMA_VERSION with contract-registry lookup
+        - parse apiVersion/kind/schemaVersion envelopes
+        - read supported older versions without rewriting them
+        - reject unsupported future versions and implicit migrations
+    - path: packages/npmctl/src/npmctl/models.py
+      changes:
+        - preserve resource models
+        - add schema-3 DesiredState metadata/spec conversion boundary
+        - keep normalization free of filesystem and network effects
+    - path: packages/npmctl/src/npmctl/planner.py
+      changes:
+        - make operation ordering canonical
+        - attach stable operation identities
+        - expose normalized semantic plan inputs for artifact construction
+        - keep planner side-effect free
+    - path: packages/npmctl/src/npmctl/apply.py
+      changes:
+        - accept a validated PlanArtifact instead of recomputing from desired state
+        - verify artifact, source, target, capability, profile, and live-state bindings
+        - reject adoption/prune/delete unless authorized by a migration artifact
+    - path: packages/npmctl/src/npmctl/dns.py
+      changes:
+        - keep DNS planning side-effect free
+        - pass DnsMutationContext to provider mutation
+        - require readback and return ProviderMutationResult
+        - re-plan complete-zone writes while a zone lease is held
+    - path: packages/npmctl/src/npmctl/plugins.py
+      changes:
+        - add plugin contract/capability declarations
+        - add custom schema and migration-step entry-point groups
+        - reject unsupported or conflicting plugin registrations
+        - adapt legacy DNS providers during the deprecation window
+    - path: packages/npmctl/src/npmctl/schema.py
+      changes:
+        - model explicit NPM API-profile identity and fingerprint
+        - compare planned and observed target profiles
+    - path: packages/npmctl/src/npmctl/output.py
+      changes:
+        - emit versioned CommandResult envelopes
+        - provide stable semantic codes, retryability, and mutation indicators
+        - apply artifact redaction policy
+    - path: packages/npmctl/src/npmctl/errors.py
+      changes:
+        - add typed contract, stale-artifact, signature, lease, idempotency, and recovery errors
+        - map each error to stable CLI semantics
+    - path: packages/npmctl/src/npmctl/cli.py
+      changes:
+        - retain parser construction and top-level dispatch only
+        - add contract, repo, lock, artifact, import, and expanded migrate commands
+        - add plan --artifact-out and apply --artifact
+        - extend version --json with compatibility matrices
+        - emit deprecation warnings for legacy mutation paths
+    - path: packages/npmctl/src/npmctl/operational.py
+      changes:
+        - retain compliance artifact generation
+        - delegate plan/report/backup/rollback behavior to versioned artifact and migration modules
+        - keep compatibility wrappers until 1.0
+    - path: packages/npmctl/src/npmctl/migrations/registry.py
+      changes:
+        - replace one CURRENT_SCHEMA_VERSION with the typed migration graph
+        - retain migrate_document/migrate_path compatibility wrappers through 0.x
+    - path: packages/npmctl/src/npmctl/migrations/base.py
+      changes:
+        - replace single-file MigrationResult with step, operation, checkpoint,
+          transaction, and verification result types
+    - path: packages/npmctl/src/npmctl/migrations/v1.py
+      changes: [re-export the explicit legacy-to-v1 migration step during deprecation]
+    - path: packages/npmctl/src/npmctl/migrations/v2.py
+      changes: [re-export the explicit v1-to-v2 migration step during deprecation]
+    - path: packages/npmctl/src/npmctl/__init__.py
+      changes: [export version metadata without coupling it to contract versions]
+    - path: packages/npmctl/pyproject.toml
+      changes:
+        - add optional signing dependency using cryptography
+        - include packaged schemas
+        - keep core planning and verification usable without signing extras
+
+providerPackagePattern:
+  additionsPerPackage:
+    - path: src/<provider_package>/capabilities.py
+      implements:
+        - immutable ProviderCapabilities declaration
+        - supported record types and mutation model
+        - readback, locking, idempotency, and recovery flags
+  updatesPerPackage:
+    - path: src/<provider_package>/provider.py
+      changes:
+        - implement capabilities()
+        - accept DnsMutationContext
+        - return ProviderMutationResult
+        - verify post-mutation readback
+    - path: src/<provider_package>/client.py
+      changes:
+        - expose provider request identifiers when available
+        - classify ambiguous and retryable outcomes
+    - path: src/<provider_package>/errors.py
+      changes: [carry retryability, request identity, and safe redacted context]
+    - path: tests/test_<provider>.py
+      changes:
+        - capability declaration coverage
+        - supported and unsupported operation coverage
+        - response-loss/readback coverage
+        - idempotency and recovery coverage where supported
+
+schemas:
+  additions:
+    - schemas/npmctl/desired-state.v3.schema.json
+    - schemas/npmctl/repository.v1.schema.json
+    - schemas/npmctl/lock.v1.schema.json
+    - schemas/npmctl/plan-artifact.v1.schema.json
+    - schemas/npmctl/live-state-snapshot.v1.schema.json
+    - schemas/npmctl/apply-report.v1.schema.json
+    - schemas/npmctl/migration-manifest.v1.schema.json
+    - schemas/npmctl/provider-capabilities.v1.schema.json
+    - schemas/npmctl/command-result.v1.schema.json
+    - schemas/npmctl/plugin-contract.v1.schema.json
+  compatibility:
+    retainReadOnly:
+      - schemas/npmctl/desired-state.v1.schema.json
+      - schemas/npmctl/desired-state.v2.schema.json
+      - schemas/npmctl/plan-output.v1.schema.json
+    aliases:
+      - path: schemas/npmctl/migration-manifest.schema.json
+        behavior: reference migration-manifest.v1.schema.json through the 0.x line
+
+tests:
+  additions:
+    unit:
+      - packages/npmctl/tests/unit/test_contract_versions.py
+      - packages/npmctl/tests/unit/test_canonical_digests.py
+      - packages/npmctl/tests/unit/test_lockfile.py
+      - packages/npmctl/tests/unit/test_repository_manifest.py
+      - packages/npmctl/tests/unit/test_plan_artifacts.py
+      - packages/npmctl/tests/unit/test_artifact_signing.py
+      - packages/npmctl/tests/unit/test_artifact_redaction.py
+      - packages/npmctl/tests/unit/test_cli_contract.py
+      - packages/npmctl/tests/unit/test_migration_graph.py
+      - packages/npmctl/tests/unit/test_migration_manifest.py
+      - packages/npmctl/tests/unit/test_migration_ledger.py
+      - packages/npmctl/tests/unit/test_migration_recovery.py
+      - packages/npmctl/tests/unit/test_migration_leases.py
+      - packages/npmctl/tests/unit/test_live_state_import.py
+      - packages/npmctl/tests/unit/test_provider_capabilities.py
+      - packages/npmctl/tests/unit/test_plugin_migrations.py
+    integration:
+      - packages/npmctl/tests/integration/test_plan_artifact_apply.py
+      - packages/npmctl/tests/integration/test_transactional_migrations.py
+      - packages/npmctl/tests/integration/test_migration_execution.py
+      - packages/npmctl/tests/integration/test_migration_recovery.py
+      - packages/npmctl/tests/integration/test_resource_migrations.py
+      - packages/npmctl/tests/integration/test_provider_capabilities.py
+  updates:
+    - packages/npmctl/tests/unit/test_loader_migrations.py
+    - packages/npmctl/tests/unit/test_cli.py
+    - packages/npmctl/tests/unit/test_apply.py
+    - packages/npmctl/tests/unit/test_planner.py
+    - packages/npmctl/tests/unit/test_dns_reconcile.py
+    - packages/npmctl/tests/integration/test_fake_npm_api.py
+  acceptance:
+    - happy and unhappy paths for every contract and migration step
+    - valid and invalid signatures, schemas, profiles, leases, and artifacts
+    - deterministic repeat planning
+    - no source mutation during validate, plan, or ordinary apply
+    - atomic failure injection at every filesystem transaction boundary
+    - response-loss reconciliation without duplicate provider mutation
+    - exact migration-only gates for adopt, transfer, prune, and delete
+
+documentation:
+  additions:
+    - docs/contracts.md
+    - docs/repository-manifest.md
+    - docs/plan-artifacts.md
+    - docs/migration-manifests.md
+    - docs/migration-recovery.md
+    - docs/provider-capabilities.md
+    - docs/artifact-trust.md
+  updates:
+    - README.md
+    - packages/npmctl/README.md
+    - docs/cli.md
+    - docs/desired-state.md
+    - docs/schema-migrations.md
+    - docs/adoption.md
+    - docs/dns-providers.md
+    - docs/extensions.md
+    - docs/security.md
+    - docs/github-actions.md
+    - mkdocs.yml
+
+automation:
+  updates:
+    - path: scripts/validate_schemas.py
+      changes:
+        - validate schemas against JSON Schema 2020-12
+        - validate committed examples and cross-schema references
+    - path: .github/actions/npmctl-schema-gate/action.yml
+      changes:
+        - run contract fixture and migration-path validation
+    - path: .github/actions/npmctl-check/action.yml
+      changes:
+        - run deterministic artifact and no-implicit-migration gates
+    - path: .github/workflows/release.yml
+      changes:
+        - verify synchronized workspace package versions
+        - publish contract compatibility matrix and migration notes
+
+deprecationsAndRemovals:
+  deprecateIn0x:
+    - surface: npmctl apply DESIRED_STATE
+      replacement: npmctl apply --artifact PLAN_ARTIFACT
+    - surface: npmctl migrate PATH --write
+      replacement: npmctl migrate plan followed by npmctl migrate apply
+    - surface: npmctl adopt direct mutation
+      replacement: generate and apply a resource-adoption migration
+    - surface: --prune-owned on ordinary apply
+      replacement: explicit prune/delete migration manifest
+    - surface: --rollback-plan
+      replacement: migration rollback for verified inverses or migration repair
+    - surface: global EXPECTED_SCHEMA_VERSION and CURRENT_SCHEMA_VERSION
+      replacement: contract registry and migration graph
+  removeIn1_0:
+    - direct apply-time replanning from a desired-state path
+    - direct adopt mutation command
+    - ordinary apply prune/delete authorization
+    - direct migrate --write normalization path
+    - best-effort rollback-plan generation as a recovery guarantee
+    - unversioned plan-output artifact as an apply input
+  neverRemove:
+    - read support for committed desired-state v1/v2 fixtures while compatibility policy promises it
+
+deliveryRules:
+  - planner and migration planning remain side-effect free
+  - apply consumes only a clean validated reviewed artifact
+  - migration apply consumes only a clean validated reviewed manifest
+  - adoption prune transfer and delete never occur in ordinary apply
+  - secrets never appear in desired state lockfiles plans snapshots ledgers reports or errors
+  - unsupported provider capability or target profile fails before mutation
+  - complete-zone DNS writes re-plan while holding the zone lease
+  - rollback is exposed only when a verified inverse exists
+  - every mutation produces readback verification and an append-only result record
+
+verificationCommands:
+  - uv run ruff check .
+  - uv run ruff format --check .
+  - uv run yamllint .
+  - uv run python scripts/validate_schemas.py
+  - uv run pytest
+  - uv run ssot validate .
+
+unresolved:
+  - decision: shared lease backend for independent GitHub-hosted runners
+    default: local filesystem lease plus extension protocol; require a shared runner or external backend for complete-zone production writes
+  - decision: default artifact signer implementation
+    default: optional Ed25519 support through the cryptography extra
+  - decision: artifact retention duration
+    default: repository policy must declare it; npmctl supplies no destructive default

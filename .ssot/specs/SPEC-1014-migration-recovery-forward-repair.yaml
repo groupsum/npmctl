@@ -1,0 +1,28 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1014"
+number: 1014
+slug: "migration-recovery-forward-repair"
+title: "Migration recovery and forward repair"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Every migration SHALL declare reversible or forward-repair-only recovery. Reversible migrations SHALL provide and verify an inverse. Forward-repair migrations SHALL capture a complete prechange snapshot, record completed checkpoints, verify provider readback, and generate deterministic repair operations."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:31:20Z"
+    note: "Proposed contract for npmctl versioning and migration work."
+    status: "draft"
+  -
+    status: "accepted"
+    note: "Implemented and covered by the npmctl 0.4 verification suite."
+    at: "2026-07-14T03:26:17Z"
+references: []
+body: |-
+  Every migration SHALL declare reversible or forward-repair-only recovery. Reversible migrations SHALL provide and verify an inverse. Forward-repair migrations SHALL capture a complete prechange snapshot, record completed checkpoints, verify provider readback, and generate deterministic repair operations.
+spec_kind: "operational"
+adr_ids:
+  - "adr:1011"

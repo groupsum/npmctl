@@ -1,6 +1,6 @@
 [project]
 name = "npmctl-workspace"
-version = "0.3.10"
+version = "0.4.0"
 description = "Workspace root for npmctl, an owner-scoped Nginx Proxy Manager controller."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -42,6 +42,9 @@ classifiers = [
 [tool.uv]
 package = false
 
+[tool.uv.sources]
+npmctl = { workspace = true }
+
 [tool.uv.workspace]
 members = [
   "packages/npmctl",
@@ -56,6 +59,7 @@ members = [
 dev = [
   "build>=1.2.2",
   "coverage[toml]>=7.8.0",
+  "jsonschema>=4.25.0",
   "pytest>=8.3.0",
   "pytest-cov>=6.0.0",
   "PyYAML>=6.0.2",

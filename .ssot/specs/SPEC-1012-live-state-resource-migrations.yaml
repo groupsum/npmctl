@@ -1,0 +1,29 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1012"
+number: 1012
+slug: "live-state-resource-migrations"
+title: "Live-state import and resource migration controls"
+status: "in_review"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Live-state import SHALL classify resources as owned, unmanaged matching, unmanaged drifting, foreign-owned, or ambiguous. Adoption, ownership transfer, prune, and delete SHALL require explicit migration manifests, exact resource scope, approval policy, snapshots, and verification. Import SHALL never adopt automatically."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:31:19Z"
+    note: "Proposed contract for npmctl versioning and migration work."
+    status: "draft"
+  -
+    status: "in_review"
+    note: "Core contract implemented; remaining advanced lifecycle behavior stays explicitly planned."
+    at: "2026-07-14T03:26:19Z"
+references: []
+body: |-
+  Live-state import SHALL classify resources as owned, unmanaged matching, unmanaged drifting, foreign-owned, or ambiguous. Adoption, ownership transfer, prune, and delete SHALL require explicit migration manifests, exact resource scope, approval policy, snapshots, and verification. Import SHALL never adopt automatically.
+spec_kind: "normative"
+adr_ids:
+  - "adr:1009"
+  - "adr:1011"

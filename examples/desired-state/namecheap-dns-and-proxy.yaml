@@ -1,37 +1,49 @@
 ---
 apiVersion: npmctl.com/v1
-schemaVersion: 2
-
-dns_records:
-  - provider: namecheap
-    zone: npmctl.com
-    type: A
-    name: "@"
-    value: 172.16.0.10
-    ttl: 300
-    meta:
-      managed_by: npmctl
-      owner: npmctl-lander
-      resource_id: dns.npmctl-com.root-a
-  - provider: namecheap
-    zone: npmctl.com
-    type: CNAME
-    name: www
-    value: npmctl.com
-    ttl: 300
-    meta:
-      managed_by: npmctl
-      owner: npmctl-lander
-      resource_id: dns.npmctl-com.www-cname
-
-proxy_hosts:
-  - domain_names:
-      - npmctl.com
-      - www.npmctl.com
-    forward_host: npmctl_lander
-    forward_port: 80
-    forward_scheme: http
-    meta:
-      managed_by: npmctl
-      owner: npmctl-lander
-      resource_id: proxy.npmctl-com
+kind: DesiredState
+schemaVersion: 3
+metadata:
+  name: npmctl-lander-desired-state
+  owner: npmctl-lander
+spec:
+  proxyHosts:
+    - domain_names:
+        - npmctl.com
+        - www.npmctl.com
+      forward_host: npmctl_lander
+      forward_port: 80
+      forward_scheme: http
+      meta:
+        managed_by: npmctl
+        owner: npmctl-lander
+        resource_id: proxy.npmctl-com
+  certificates: []
+  accessLists: []
+  redirectionHosts: []
+  deadHosts: []
+  streams: []
+  users: []
+  settings: []
+  dnsRecords:
+    - provider: namecheap
+      zone: npmctl.com
+      type: A
+      name: '@'
+      value: 172.16.0.10
+      ttl: 300
+      meta:
+        managed_by: npmctl
+        owner: npmctl-lander
+        resource_id: dns.npmctl-com.root-a
+    - provider: namecheap
+      zone: npmctl.com
+      type: CNAME
+      name: www
+      value: npmctl.com
+      ttl: 300
+      meta:
+        managed_by: npmctl
+        owner: npmctl-lander
+        resource_id: dns.npmctl-com.www-cname
+  pluginResources: []
+  externalCertificates: []

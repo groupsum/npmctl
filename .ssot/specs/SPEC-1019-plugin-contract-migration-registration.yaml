@@ -1,0 +1,30 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1019"
+number: 1019
+slug: "plugin-contract-migration-registration"
+title: "Plugin contract and migration registration"
+status: "in_review"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Plugins SHALL publish supported contract read/write ranges and capability versions. Custom resource kinds SHALL register schemas and canonicalization rules. Plugin migrations SHALL be adjacent explicit steps. Duplicate steps, ambiguous paths, unsupported future schemas, and missing migrations SHALL fail before planning or mutation."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:45:35Z"
+    note: "Proposed follow-on contract for npmctl versioning and migration safety."
+    status: "draft"
+  -
+    status: "in_review"
+    note: "Core contract implemented; remaining advanced lifecycle behavior stays explicitly planned."
+    at: "2026-07-14T03:26:19Z"
+references: []
+body: |-
+  Plugins SHALL publish supported contract read/write ranges and capability versions. Custom resource kinds SHALL register schemas and canonicalization rules. Plugin migrations SHALL be adjacent explicit steps. Duplicate steps, ambiguous paths, unsupported future schemas, and missing migrations SHALL fail before planning or mutation.
+spec_kind: "normative"
+adr_ids:
+  - "adr:1015"
+  - "adr:1006"
+  - "adr:1010"

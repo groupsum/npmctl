@@ -1,0 +1,28 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1008"
+number: 1008
+slug: "contract-registry-and-compatibility"
+title: "Contract registry and compatibility"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "npmctl SHALL register each contract kind with independent current, readable, and writable schema versions. Every contract document SHALL carry apiVersion, kind, schemaVersion, and metadata. Unknown future versions SHALL fail closed. Deprecation warnings and strict compatibility failures SHALL be machine-readable."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:31:17Z"
+    note: "Proposed contract for npmctl versioning and migration work."
+    status: "draft"
+  -
+    status: "accepted"
+    note: "Implemented and covered by the npmctl 0.4 verification suite."
+    at: "2026-07-14T03:26:16Z"
+references: []
+body: |-
+  npmctl SHALL register each contract kind with independent current, readable, and writable schema versions. Every contract document SHALL carry apiVersion, kind, schemaVersion, and metadata. Unknown future versions SHALL fail closed. Deprecation warnings and strict compatibility failures SHALL be machine-readable.
+spec_kind: "normative"
+adr_ids:
+  - "adr:1006"

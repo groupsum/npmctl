@@ -1,0 +1,29 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1015"
+number: 1015
+slug: "repository-manifest-canonical-layout"
+title: "Repository manifest and canonical npmctl layout"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "An NpmctlRepository manifest SHALL declare repository identity, owners, environments, domains, deployment modes, desired-state references, migration roots, and workflow policy. npmctl SHALL validate the canonical .npmctl layout and prevent cross-environment references or ambiguous ownership."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:31:20Z"
+    note: "Proposed contract for npmctl versioning and migration work."
+    status: "draft"
+  -
+    status: "accepted"
+    note: "Implemented and covered by the npmctl 0.4 verification suite."
+    at: "2026-07-14T03:26:17Z"
+references: []
+body: |-
+  An NpmctlRepository manifest SHALL declare repository identity, owners, environments, domains, deployment modes, desired-state references, migration roots, and workflow policy. npmctl SHALL validate the canonical .npmctl layout and prevent cross-environment references or ambiguous ownership.
+spec_kind: "normative"
+adr_ids:
+  - "adr:1006"
+  - "adr:1008"

@@ -27,6 +27,21 @@
 
 `npmctl` is an owner-scoped GitOps controller for Nginx Proxy Manager. It validates desired-state YAML, plans safe changes against a live NPM API, applies clean plans, and adopts unmanaged resources only when explicitly requested.
 
+## Versioned execution
+
+npmctl 0.4 adds independently versioned contracts, DesiredState v3, canonical semantic digests, repository manifests, lockfiles, immutable plan artifacts, transactional migration manifests, provider capability negotiation, and stable machine-readable command results.
+
+```bash
+npmctl contract list
+npmctl repo validate .npmctl/repository.yaml
+npmctl plan .npmctl/production --artifact-out .npmctl/artifacts/plan.yaml \
+  --repository groupsum/example --environment production --commit "$GITHUB_SHA"
+npmctl apply --artifact .npmctl/artifacts/plan.yaml \
+  --repository groupsum/example --environment production --commit "$GITHUB_SHA"
+```
+
+Ordinary plan artifacts may create, update, or verify resources. Adoption, transfer, prune, and delete require an explicit reviewed migration artifact.
+
 ## FAQ
 
 ### What is npmctl?

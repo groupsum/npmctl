@@ -1,0 +1,28 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1017"
+number: 1017
+slug: "artifact-redaction-retention-disposal"
+title: "Artifact redaction retention and disposal"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Each artifact kind SHALL define allowed persisted fields, prohibited secret material, deterministic redaction markers, minimization rules, retention duration, and disposal behavior. Logs and machine-readable errors SHALL apply the same policy. Digest computation SHALL not require disclosure of excluded secret values."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:45:34Z"
+    note: "Proposed follow-on contract for npmctl versioning and migration safety."
+    status: "draft"
+  -
+    status: "accepted"
+    note: "Implemented and covered by the npmctl 0.4 verification suite."
+    at: "2026-07-14T03:26:18Z"
+references: []
+body: |-
+  Each artifact kind SHALL define allowed persisted fields, prohibited secret material, deterministic redaction markers, minimization rules, retention duration, and disposal behavior. Logs and machine-readable errors SHALL apply the same policy. Digest computation SHALL not require disclosure of excluded secret values.
+spec_kind: "normative"
+adr_ids:
+  - "adr:1013"

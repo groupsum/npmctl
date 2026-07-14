@@ -1,0 +1,25 @@
+schema_version: "0.2.0"
+kind: "adr"
+id: "adr:1009"
+number: 1009
+slug: "separate-reconciliation-and-resource-migrations"
+title: "Separate ordinary reconciliation from ownership and destructive migrations"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Context: adoption, ownership transfer, prune, and delete change management authority or destroy state. Decision: these operations SHALL require a versioned migration manifest and explicit approval; ordinary apply SHALL reject implicit migration operations. Consequences: reconciliation remains predictable and exceptional risk is independently reviewable."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:31:16Z"
+    note: "Proposed npmctl versioning and migration architecture."
+    status: "draft"
+  -
+    status: "accepted"
+    note: "Accepted with the npmctl 0.4 versioning and migration implementation."
+    at: "2026-07-14T03:26:14Z"
+references: []
+body: |-
+  Context: adoption, ownership transfer, prune, and delete change management authority or destroy state. Decision: these operations SHALL require a versioned migration manifest and explicit approval; ordinary apply SHALL reject implicit migration operations. Consequences: reconciliation remains predictable and exceptional risk is independently reviewable.

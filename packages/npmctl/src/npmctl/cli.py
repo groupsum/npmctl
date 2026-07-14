@@ -100,6 +100,37 @@ def build_parser() -> argparse.ArgumentParser:
     version = sub.add_parser("version", help="Show machine-readable version metadata")
     version.add_argument("--json", action="store_true", help="Emit JSON version metadata")
 
+    contract = sub.add_parser("contract", help="Inspect versioned document contracts")
+    contract_sub = contract.add_subparsers(dest="contract_command", required=True)
+    contract_sub.add_parser("list", help="List built-in contract compatibility")
+    contract_show = contract_sub.add_parser("show", help="Show one contract")
+    contract_show.add_argument("kind")
+    contract_check = contract_sub.add_parser("check", help="Check a document contract")
+    contract_check.add_argument("path")
+    contract_check.add_argument("--strict", action="store_true")
+
+    repo = sub.add_parser("repo", help="Inspect an npmctl repository manifest")
+    repo_sub = repo.add_subparsers(dest="repo_command", required=True)
+    repo_validate = repo_sub.add_parser("validate", help="Validate a repository manifest")
+    repo_validate.add_argument("path")
+    repo_status = repo_sub.add_parser("status", help="Resolve one repository environment")
+    repo_status.add_argument("path")
+    repo_status.add_argument("--environment", required=True)
+
+    lock = sub.add_parser("lock", help="Check reproducibility lockfiles")
+    lock_sub = lock.add_subparsers(dest="lock_command", required=True)
+    lock_check = lock_sub.add_parser("check", help="Compare expected and actual lockfiles")
+    lock_check.add_argument("expected")
+    lock_check.add_argument("actual")
+
+    artifact = sub.add_parser("artifact", help="Inspect immutable execution artifacts")
+    artifact_sub = artifact.add_subparsers(dest="artifact_command", required=True)
+    artifact_inspect = artifact_sub.add_parser("inspect", help="Validate and summarize an artifact")
+    artifact_inspect.add_argument("path")
+    artifact_inspect.add_argument("--strict", action="store_true")
+    artifact_digest = artifact_sub.add_parser("digest", help="Print an artifact semantic digest")
+    artifact_digest.add_argument("path")
+
     completion = sub.add_parser("completion", help="Generate shell completion script")
     completion.add_argument("shell", choices=("bash", "powershell", "zsh"))
 
@@ -117,11 +148,15 @@ def build_parser() -> argparse.ArgumentParser:
 
     plan = sub.add_parser("plan", help="Compute owner-scoped CRUD plan")
     _add_reconcile_args(plan)
+    plan.add_argument("--artifact-out", help="Write an immutable PlanArtifact")
+    _add_artifact_binding_args(plan)
     plan.add_argument("--validate-output", action="store_true", help="Validate plan output against npmctl schema")
     plan.set_defaults(needs_api=True)
 
     apply = sub.add_parser("apply", help="Apply a clean owner-scoped CRUD plan")
-    _add_reconcile_args(apply)
+    _add_reconcile_args(apply, desired_required=False)
+    apply.add_argument("--artifact", help="Apply an exact reviewed PlanArtifact")
+    _add_artifact_binding_args(apply)
     apply.add_argument("--dry-run", action="store_true", help="Plan but do not mutate NPM")
     apply.add_argument("--backup-dir", help="Write remote state backup before apply")
     apply.add_argument("--report", help="Write structured apply transaction report")
@@ -179,8 +214,8 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _add_reconcile_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("desired_state")
+def _add_reconcile_args(parser: argparse.ArgumentParser, *, desired_required: bool = True) -> None:
+    parser.add_argument("desired_state", nargs=None if desired_required else "?")
     parser.add_argument("--owner", help="Limit operation to one owner scope")
     parser.add_argument("--no-updates", action="store_true", help="Conflict on owned drift instead of updating")
     parser.add_argument("--prune-owned", action="store_true", help="Delete owned resources absent from desired state")
@@ -205,6 +240,13 @@ def _add_reconcile_args(parser: argparse.ArgumentParser) -> None:
         ),
         help="Limit reconcile to one resource family; may be repeated",
     )
+
+
+def _add_artifact_binding_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--repository", default=os.getenv("GITHUB_REPOSITORY"))
+    parser.add_argument("--environment", default="production")
+    parser.add_argument("--commit", default=os.getenv("GITHUB_SHA"))
+    parser.add_argument("--expires-at")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -259,9 +301,59 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
         return EXIT_OK
 
     if args.command == "version":
-        payload = {"package": "npmctl", "version": __version__, "schema_version": 2, "api_profile": "npm-2.10.4"}
+        from npmctl.contracts import BUILTIN_CONTRACTS
+
+        payload = {
+            "package": "npmctl",
+            "version": __version__,
+            "schema_version": 3,
+            "api_profile": "npm-2.10.4",
+            "contracts": BUILTIN_CONTRACTS.matrix(),
+        }
         text = json.dumps(payload, indent=2, sort_keys=True) if args.json or args.output == "json" else __version__
         write_output("json" if args.json else args.output, payload, text)
+        return EXIT_OK
+
+    if args.command == "contract":
+        from npmctl.artifacts import read_artifact
+        from npmctl.commands.contracts import contract_check, contract_list, contract_show
+
+        if args.contract_command == "list":
+            payload = contract_list()
+        elif args.contract_command == "show":
+            payload = contract_show(args.kind)
+        else:
+            payload = contract_check(read_artifact(args.path), strict=args.strict)
+        write_output(args.output, payload, json.dumps(payload, indent=2, sort_keys=True))
+        return EXIT_OK
+
+    if args.command == "repo":
+        from npmctl.commands.repository import repository_status, repository_validate
+
+        payload = (
+            repository_validate(args.path)
+            if args.repo_command == "validate"
+            else repository_status(args.path, args.environment)
+        )
+        write_output(args.output, payload, json.dumps(payload, indent=2, sort_keys=True))
+        return EXIT_OK
+
+    if args.command == "lock":
+        from npmctl.commands.lock import lock_check
+
+        payload = lock_check(args.expected, args.actual)
+        write_output(args.output, payload, json.dumps(payload, indent=2, sort_keys=True))
+        return EXIT_OK if payload["ok"] else EXIT_CONFLICT
+
+    if args.command == "artifact":
+        from npmctl.commands.artifacts import artifact_digest_command, artifact_inspect_command
+
+        payload = (
+            artifact_inspect_command(args.path, strict=args.strict)
+            if args.artifact_command == "inspect"
+            else artifact_digest_command(args.path)
+        )
+        write_output(args.output, payload, json.dumps(payload, indent=2, sort_keys=True))
         return EXIT_OK
 
     if args.command == "completion":
@@ -365,6 +457,12 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
         from npmctl.planner import PlannerOptions, compute_plan
 
         assert client is not None
+        if args.command == "apply" and args.artifact:
+            if args.desired_state:
+                raise ValidationError("apply accepts either DESIRED_STATE or --artifact, not both")
+            return _apply_plan_artifact(args, client)
+        if args.command == "apply" and not args.desired_state:
+            raise ValidationError("apply requires DESIRED_STATE or --artifact")
         desired = load_desired_state(args.desired_state)
         capabilities = client.capabilities()
         existing = client.existing_state(
@@ -403,6 +501,8 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
             except ValueError as exc:
                 raise ValidationError(str(exc)) from exc
         if args.command == "plan" or getattr(args, "dry_run", False):
+            if getattr(args, "artifact_out", None):
+                _write_plan_artifact(args, plan, desired, existing, capabilities)
             write_output(args.output, plan_payload, _format_combined_plan_text(plan, dns_plan))
             return EXIT_OK if plan.ok and dns_plan.ok else EXIT_CONFLICT
         if not plan.ok or not dns_plan.ok:
@@ -428,6 +528,78 @@ def _dispatch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
 
     parser.error(f"unsupported command: {args.command}")  # pragma: no cover - argparse exits
     return EXIT_USAGE_OR_VALIDATION  # pragma: no cover
+
+
+def _write_plan_artifact(args: argparse.Namespace, plan: Any, desired: Any, existing: Any, capabilities: Any) -> None:
+    from dataclasses import asdict
+
+    from npmctl.artifacts import build_plan_artifact, write_artifact
+    from npmctl.contracts import semantic_digest
+
+    if args.command != "plan" or args.prune_owned:
+        raise ValidationError("ordinary PlanArtifact output does not authorize prune/delete operations")
+    if desired.dns_records:
+        raise ValidationError("PlanArtifact apply does not yet support DNS operations; use ordinary plan/apply")
+    repository = args.repository or Path.cwd().name
+    artifact = build_plan_artifact(
+        plan,
+        artifact_id=semantic_digest(plan.to_dict())[:24],
+        repository=repository,
+        environment=args.environment,
+        commit=args.commit or "working-tree",
+        desired_state_digest=semantic_digest(asdict(desired)),
+        live_state_fingerprint=semantic_digest([item.to_dict() for item in existing.resources()]),
+        provider_capabilities={},
+        api_profiles={"npm": capabilities.api_profile},
+        expires_at=args.expires_at,
+    )
+    write_artifact(args.artifact_out, artifact.to_dict())
+
+
+def _apply_plan_artifact(args: argparse.Namespace, client: Any) -> int:
+    from npmctl.apply import ApplyEngine
+    from npmctl.artifacts import plan_from_artifact, read_artifact, validate_plan_binding
+    from npmctl.contracts import semantic_digest
+
+    document = read_artifact(args.artifact, strict=True)
+    metadata = document["metadata"]
+    spec = document["spec"]
+    plan = plan_from_artifact(document)
+    capabilities = client.capabilities()
+    existing = client.existing_state(
+        include_certificates=capabilities.certificates.list,
+        include_access_lists=capabilities.access_lists.list,
+    )
+    from npmctl.artifacts.models import PlanArtifact
+
+    artifact = PlanArtifact(
+        artifact_id=str(metadata["id"]),
+        repository=str(metadata["repository"]),
+        environment=str(metadata["environment"]),
+        commit=str(spec["source"]["commit"]),
+        desired_state_digest=str(spec["inputs"]["desiredStateDigest"]),
+        live_state_fingerprint=str(spec["inputs"]["liveStateFingerprint"]),
+        operations=tuple(spec["operations"]),
+        conflicts=tuple(spec.get("conflicts", [])),
+        provider_capabilities=dict(spec.get("providerCapabilities", {})),
+        api_profiles=dict(spec.get("apiProfiles", {})),
+        created_at=str(metadata["createdAt"]),
+        expires_at=metadata.get("expiresAt"),
+    )
+    validate_plan_binding(
+        artifact,
+        repository=args.repository or artifact.repository,
+        environment=args.environment,
+        commit=args.commit or artifact.commit,
+        desired_state_digest=artifact.desired_state_digest,
+        live_state_fingerprint=semantic_digest([item.to_dict() for item in existing.resources()]),
+        provider_capabilities={},
+        api_profiles={"npm": capabilities.api_profile},
+    )
+    result = ApplyEngine(client=client, capabilities=capabilities, existing_state=existing).apply(plan)
+    payload = {"ok": True, "artifact": artifact.digest, "result": result.to_dict()}
+    write_output(args.output, payload, json.dumps(payload, indent=2, sort_keys=True))
+    return EXIT_OK
 
 
 def _schema_command(args: argparse.Namespace, client: Any | None) -> int:
@@ -562,8 +734,8 @@ def _redact_cli_message(message: str, args: argparse.Namespace) -> str:
 
 def _completion_script(shell: str) -> str:
     commands = (
-        "validate migrate health doctor env version completion schema plan apply adopt drift audit-log compliance "
-        "plugins dns"
+        "validate migrate health doctor env version contract repo lock artifact completion schema plan apply adopt "
+        "drift audit-log compliance plugins dns"
     )
     if shell == "powershell":
         return f"Register-ArgumentCompleter -Native -CommandName npmctl -ScriptBlock {{ param($wordToComplete) '{commands}'.Split(' ') | Where-Object {{ $_ -like \"$wordToComplete*\" }} }}\n"

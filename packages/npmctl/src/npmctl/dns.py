@@ -5,8 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Mapping
 
+from npmctl.contracts import semantic_digest
 from npmctl.models import DesiredDnsRecord, PlanAction
-from npmctl.plugins import DnsProvider
+from npmctl.plugins import DnsProvider, dns_capabilities
+from npmctl.providers import DnsMutationContext, ProviderMutationResult
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,9 +110,14 @@ class DnsApplyResult:
 
     applied: bool
     mutations: list[dict[str, Any]] = field(default_factory=list)
+    provider_results: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
-        return {"applied": self.applied, "mutations": list(self.mutations)}
+        return {
+            "applied": self.applied,
+            "mutations": list(self.mutations),
+            "provider_results": list(self.provider_results),
+        }
 
 
 def compute_dns_plan(
@@ -256,6 +263,7 @@ def apply_dns_plan(plan: DnsPlan, providers: Mapping[str, DnsProvider]) -> DnsAp
             by_scope.setdefault((operation.provider, operation.zone), []).append(operation)
 
     mutations: list[dict[str, Any]] = []
+    provider_results: list[dict[str, Any]] = []
     for (provider_name, zone), operations in sorted(by_scope.items()):
         provider = providers[provider_name]
         if not hasattr(provider, "apply_records"):
@@ -269,9 +277,25 @@ def apply_dns_plan(plan: DnsPlan, providers: Mapping[str, DnsProvider]) -> DnsAp
             elif operation.desired is not None:
                 next_records[_record_key(operation.desired)] = dict(operation.desired)
             mutations.append(operation.to_dict())
-        provider.apply_records(zone, tuple(next_records[key] for key in sorted(next_records)))
+        target = tuple(next_records[key] for key in sorted(next_records))
+        operation_id = semantic_digest([operation.to_dict() for operation in operations])
+        context = DnsMutationContext(
+            operation_id=operation_id,
+            idempotency_key=semantic_digest({"provider": provider_name, "zone": zone, "target": target}),
+            expected_before_digest=semantic_digest(provider.records(zone)),
+        )
+        if hasattr(provider, "capabilities"):
+            capabilities = dns_capabilities(provider)
+            for record in target:
+                capabilities.require_record_type(str(record["type"]))
+            result = provider.apply_records(zone, target, context)
+            if not isinstance(result, ProviderMutationResult) or not result.verified:
+                raise ValueError(f"DNS provider {provider_name!r} did not verify mutation readback")
+            provider_results.append(result.to_dict())
+        else:
+            provider.apply_records(zone, target)
 
-    return DnsApplyResult(applied=True, mutations=mutations)
+    return DnsApplyResult(applied=True, mutations=mutations, provider_results=provider_results)
 
 
 def diff_dns_record(desired: Mapping[str, Any], existing: Mapping[str, Any]) -> dict[str, dict[str, Any]]:

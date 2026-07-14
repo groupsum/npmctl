@@ -727,6 +727,7 @@ class ExistingResource:
             "name": self.name,
             "domain_names": list(self.domain_names),
             "identity": self.identity.to_dict() if self.identity else None,
+            "raw": dict(self.raw),
         }
 
 

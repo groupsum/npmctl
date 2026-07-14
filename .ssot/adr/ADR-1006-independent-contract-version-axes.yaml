@@ -1,0 +1,25 @@
+schema_version: "0.2.0"
+kind: "adr"
+id: "adr:1006"
+number: 1006
+slug: "independent-contract-version-axes"
+title: "Version npmctl contracts on independent compatibility axes"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Context: package releases, document schemas, provider capabilities, target API profiles, and execution artifacts evolve independently. Decision: npmctl SHALL maintain explicit supported read and write ranges for each contract kind and SHALL NOT infer contract compatibility from package SemVer. Consequences: future contracts fail closed, deprecations are machine-readable, and version output reports every compatibility axis."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:31:16Z"
+    note: "Proposed npmctl versioning and migration architecture."
+    status: "draft"
+  -
+    status: "accepted"
+    note: "Accepted with the npmctl 0.4 versioning and migration implementation."
+    at: "2026-07-14T03:26:13Z"
+references: []
+body: |-
+  Context: package releases, document schemas, provider capabilities, target API profiles, and execution artifacts evolve independently. Decision: npmctl SHALL maintain explicit supported read and write ranges for each contract kind and SHALL NOT infer contract compatibility from package SemVer. Consequences: future contracts fail closed, deprecations are machine-readable, and version output reports every compatibility axis.

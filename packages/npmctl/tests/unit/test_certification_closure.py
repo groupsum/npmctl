@@ -410,8 +410,14 @@ def test_config_and_migration_edges(tmp_path: Path, monkeypatch) -> None:
     from npmctl.migrations.registry import migrate_document, migrate_path, needs_migration
 
     assert needs_migration({}) is True
-    current = {"apiVersion": "npmctl.com/v1", "schemaVersion": 2}
-    assert migrate_document(current) == (current, False, 2)
+    current = {
+        "apiVersion": "npmctl.com/v1",
+        "kind": "DesiredState",
+        "schemaVersion": 3,
+        "metadata": {"name": "test", "owner": "test"},
+        "spec": {},
+    }
+    assert migrate_document(current) == (current, False, 3)
     with pytest.raises(MigrationError):
         migrate_document([])
     with pytest.raises(MigrationError):
@@ -422,7 +428,7 @@ def test_config_and_migration_edges(tmp_path: Path, monkeypatch) -> None:
     json_file.write_text("null", encoding="utf-8")
     result = migrate_path(json_file, write=True)[0]
     assert result.changed is True
-    assert json.loads(json_file.read_text(encoding="utf-8"))["schemaVersion"] == 2
+    assert json.loads(json_file.read_text(encoding="utf-8"))["schemaVersion"] == 3
     scalar = tmp_path / "scalar.yaml"
     scalar.write_text("- item\n", encoding="utf-8")
     with pytest.raises(MigrationError):
@@ -1015,6 +1021,8 @@ def test_schema_and_plugin_edges(tmp_path: Path, monkeypatch) -> None:
         "resource_providers": ["res"],
         "certificate_providers": ["cert"],
         "dns_providers": ["dns"],
+        "contract_plugins": [],
+        "migration_plugins": [],
     }
     desired_file = tmp_path / "plugin-state.json"
     desired_file.write_text(

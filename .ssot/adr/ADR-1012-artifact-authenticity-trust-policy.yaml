@@ -1,0 +1,25 @@
+schema_version: "0.2.0"
+kind: "adr"
+id: "adr:1012"
+number: 1012
+slug: "artifact-authenticity-trust-policy"
+title: "Authenticate reviewed artifacts independently of transport"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Context: canonical digests detect change but do not establish who approved an artifact. Decision: npmctl SHALL support verifiable signatures over canonical artifact identity, explicit trusted-key policy, signer identity, and signature validation before privileged execution. Unsigned operation SHALL be an explicit environment policy, never an accidental fallback."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:45:33Z"
+    note: "Proposed follow-on decision for npmctl versioning and migration safety."
+    status: "draft"
+  -
+    status: "accepted"
+    note: "Accepted with the npmctl 0.4 versioning and migration implementation."
+    at: "2026-07-14T03:26:15Z"
+references: []
+body: |-
+  Context: canonical digests detect change but do not establish who approved an artifact. Decision: npmctl SHALL support verifiable signatures over canonical artifact identity, explicit trusted-key policy, signer identity, and signature validation before privileged execution. Unsigned operation SHALL be an explicit environment policy, never an accidental fallback.

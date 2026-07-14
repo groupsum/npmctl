@@ -1,0 +1,29 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1018"
+number: 1018
+slug: "migration-leases-idempotency-correlation"
+title: "Migration leases idempotency and provider correlation"
+status: "in_review"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Migration execution SHALL acquire a scope-specific lease before mutation. Every external operation SHALL have a stable idempotency key and optional provider request identifier. Lost responses SHALL be reconciled through provider readback before retry. Lease expiry, takeover, checkpoint durability, and duplicate invocation SHALL have deterministic fail-closed behavior."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:45:34Z"
+    note: "Proposed follow-on contract for npmctl versioning and migration safety."
+    status: "draft"
+  -
+    status: "in_review"
+    note: "Core contract implemented; remaining advanced lifecycle behavior stays explicitly planned."
+    at: "2026-07-14T03:26:19Z"
+references: []
+body: |-
+  Migration execution SHALL acquire a scope-specific lease before mutation. Every external operation SHALL have a stable idempotency key and optional provider request identifier. Lost responses SHALL be reconciled through provider readback before retry. Lease expiry, takeover, checkpoint durability, and duplicate invocation SHALL have deterministic fail-closed behavior.
+spec_kind: "normative"
+adr_ids:
+  - "adr:1014"
+  - "adr:1008"

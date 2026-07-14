@@ -9,6 +9,28 @@ from typing import Any
 from npmctl.planner import Plan
 
 
+def command_result(
+    *,
+    ok: bool,
+    code: str,
+    data: Any = None,
+    mutated: bool = False,
+    retryable: bool = False,
+) -> dict[str, Any]:
+    """Build the stable machine-readable command envelope."""
+
+    return {
+        "apiVersion": "npmctl.com/v1",
+        "kind": "CommandResult",
+        "schemaVersion": 1,
+        "ok": ok,
+        "code": code,
+        "mutated": mutated,
+        "retryable": retryable,
+        "data": data,
+    }
+
+
 def write_output(output: str, payload: Any, text: str) -> None:
     """Write JSON or text output to stdout."""
 

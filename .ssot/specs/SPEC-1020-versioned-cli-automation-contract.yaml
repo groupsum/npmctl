@@ -1,0 +1,30 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1020"
+number: 1020
+slug: "versioned-cli-automation-contract"
+title: "Versioned CLI automation and error contract"
+status: "in_review"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Machine-readable CLI output SHALL use a versioned CommandResult envelope with stable semantic error codes and documented process exit codes. Contract, validation, plan, apply, and migration failures SHALL identify retryability and whether mutation occurred. Additive fields SHALL preserve compatibility within the schema version."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:45:35Z"
+    note: "Proposed follow-on contract for npmctl versioning and migration safety."
+    status: "draft"
+  -
+    status: "in_review"
+    note: "Core contract implemented; remaining advanced lifecycle behavior stays explicitly planned."
+    at: "2026-07-14T03:26:19Z"
+references: []
+body: |-
+  Machine-readable CLI output SHALL use a versioned CommandResult envelope with stable semantic error codes and documented process exit codes. Contract, validation, plan, apply, and migration failures SHALL identify retryability and whether mutation occurred. Additive fields SHALL preserve compatibility within the schema version.
+spec_kind: "normative"
+adr_ids:
+  - "adr:1006"
+  - "adr:1007"
+  - "adr:1008"

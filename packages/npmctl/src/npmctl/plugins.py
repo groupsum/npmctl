@@ -7,6 +7,7 @@ from importlib import metadata
 from typing import Any, Protocol
 
 from npmctl.models import ResourceKind
+from npmctl.providers import DnsMutationContext, ProviderCapabilities, ProviderMutationResult
 
 
 class ResourceProvider(Protocol):
@@ -38,13 +39,21 @@ class DnsProvider(Protocol):
 
     name: str
 
+    def capabilities(self) -> ProviderCapabilities:
+        """Return the provider's versioned mutation contract."""
+
     def zones(self) -> tuple[str, ...]:
         """Return zones available to the configured provider account."""
 
     def records(self, zone: str) -> tuple[dict[str, Any], ...]:
         """Return DNS records for one zone."""
 
-    def apply_records(self, zone: str, records: tuple[dict[str, Any], ...]) -> None:
+    def apply_records(
+        self,
+        zone: str,
+        records: tuple[dict[str, Any], ...],
+        context: DnsMutationContext | None = None,
+    ) -> ProviderMutationResult:
         """Replace provider records for one zone with the supplied reconciled set."""
 
 
@@ -55,11 +64,15 @@ class PluginRegistry:
     resource_providers: dict[str, ResourceProvider]
     certificate_providers: dict[str, CertificateProvider]
     dns_providers: dict[str, DnsProvider]
+    contract_plugins: dict[str, Any]
+    migration_plugins: dict[str, Any]
 
     def __init__(self) -> None:
         self.resource_providers = {}
         self.certificate_providers = {}
         self.dns_providers = {}
+        self.contract_plugins: dict[str, Any] = {}
+        self.migration_plugins: dict[str, Any] = {}
 
     def register_resource_provider(self, name: str, provider: ResourceProvider) -> None:
         self.resource_providers[name] = provider
@@ -75,7 +88,12 @@ class PluginRegistry:
             "resource_providers": sorted(self.resource_providers),
             "certificate_providers": sorted(self.certificate_providers),
             "dns_providers": sorted(self.dns_providers),
+            "contract_plugins": sorted(self.contract_plugins),
+            "migration_plugins": sorted(self.migration_plugins),
         }
+
+    def capability_matrix(self) -> dict[str, dict[str, Any]]:
+        return {name: dns_capabilities(provider).to_dict() for name, provider in sorted(self.dns_providers.items())}
 
     @classmethod
     def discover(cls, *, entry_points: metadata.EntryPoints | None = None) -> PluginRegistry:
@@ -86,6 +104,8 @@ class PluginRegistry:
         _load_group(registry, groups, "npmctl.resource_providers", "resource")
         _load_group(registry, groups, "npmctl.certificate_providers", "certificate")
         _load_group(registry, groups, "npmctl.dns_providers", "dns")
+        _load_extension_group(registry.contract_plugins, groups, "npmctl.contracts")
+        _load_extension_group(registry.migration_plugins, groups, "npmctl.migrations")
         return registry
 
 
@@ -124,3 +144,28 @@ def _validate_dns_provider(name: str, provider: Any) -> None:
     for attr in ("name", "zones", "records"):
         if not hasattr(provider, attr):
             raise ValueError(f"dns provider {name!r} missing {attr}")
+
+
+def dns_capabilities(provider: Any) -> ProviderCapabilities:
+    """Return declared capabilities or a conservative legacy contract."""
+
+    if hasattr(provider, "capabilities"):
+        result = provider.capabilities()
+        if not isinstance(result, ProviderCapabilities):
+            raise ValueError(f"dns provider {provider.name!r} returned invalid capabilities")
+        return result
+    return ProviderCapabilities(
+        provider=str(provider.name),
+        capability_version=1,
+        mutation_model="legacy-unknown",
+        record_types=frozenset(),
+        supports_readback=False,
+        supports_forward_repair=False,
+    )
+
+
+def _load_extension_group(target: dict[str, Any], groups: metadata.EntryPoints, group: str) -> None:
+    for entry_point in groups.select(group=group):
+        if entry_point.name in target:
+            raise ValueError(f"duplicate plugin registration in {group}: {entry_point.name}")
+        target[entry_point.name] = entry_point.load()

@@ -1,9 +1,26 @@
 # Desired-state schema
 
-Desired state requires `apiVersion: npmctl.com/v1` and `schemaVersion: 2`.
-Resource lists are `certificates`, `access_lists`, `proxy_hosts`,
-`redirection_hosts`, `dead_hosts`, `streams`, `users`, `settings`,
-`plugin_resources`, and `external_certificates`.
+DesiredState v3 is the writable contract. It requires `apiVersion:
+npmctl.com/v1`, `kind: DesiredState`, `schemaVersion: 3`, `metadata`, and
+`spec`. Resource collections in `spec` use camel case: `certificates`,
+`accessLists`, `proxyHosts`, `redirectionHosts`, `deadHosts`, `streams`,
+`users`, `settings`, `pluginResources`, and `externalCertificates`.
+
+```yaml
+---
+apiVersion: npmctl.com/v1
+kind: DesiredState
+schemaVersion: 3
+metadata:
+  name: workload-a
+  owner: workload-a
+spec:
+  proxyHosts: []
+```
+
+Schemas v1 and v2 remain readable during the compatibility window, but npmctl
+does not rewrite them during validate, plan, or apply. Use an explicit
+migration to produce v3.
 
 Every managed resource requires metadata:
 
@@ -23,10 +40,11 @@ Repair-safe reconcile uses the same desired-state document with CLI policy contr
 - `--certificate-mode=reuse|create|rotate` to control whether certificates are only reused, created when missing, or explicitly rotated
 
 Additional resource kinds use pass-through `api_payload` fields while keeping
-the same owner metadata contract:
+the same owner metadata contract. The following snippets are collection fields
+inside `spec`:
 
 ```yaml
-redirection_hosts:
+redirectionHosts:
   - domain_names: [old.example.com]
     forward_domain_name: new.example.com
     meta: {managed_by: npmctl, owner: workload-a, resource_id: redir.old}
@@ -43,7 +61,7 @@ owner metadata contract. A resource provider is selected by name and converts a
 provider-specific payload into one supported generic NPM resource kind:
 
 ```yaml
-plugin_resources:
+pluginResources:
   - provider: stream-provider
     payload:
       incoming_port: 15432
@@ -55,7 +73,7 @@ Certificate providers can resolve external references into certificate payloads.
 The resolved payload is still parsed as a normal managed certificate:
 
 ```yaml
-external_certificates:
+externalCertificates:
   - provider: vault-certificates
     reference: prod/example
     name: prod-example

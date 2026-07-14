@@ -8,6 +8,7 @@ from typing import Any
 
 import yaml
 
+from npmctl.contracts import BUILTIN_CONTRACTS
 from npmctl.errors import ValidationError
 from npmctl.metadata import ManagedIdentity
 from npmctl.models import (
@@ -26,7 +27,21 @@ from npmctl.plugins import PluginRegistry
 
 SUPPORTED_EXTENSIONS = frozenset({".yaml", ".yml", ".json"})
 EXPECTED_API_VERSION = "npmctl.com/v1"
-EXPECTED_SCHEMA_VERSION = 2
+EXPECTED_SCHEMA_VERSION = 3
+
+_V3_KEYS = {
+    "proxyHosts": "proxy_hosts",
+    "certificates": "certificates",
+    "accessLists": "access_lists",
+    "redirectionHosts": "redirection_hosts",
+    "deadHosts": "dead_hosts",
+    "streams": "streams",
+    "users": "users",
+    "settings": "settings",
+    "dnsRecords": "dns_records",
+    "pluginResources": "plugin_resources",
+    "externalCertificates": "external_certificates",
+}
 
 
 def load_desired_state(path: str | Path, *, plugin_registry: PluginRegistry | None = None) -> DesiredState:
@@ -49,9 +64,12 @@ def load_desired_state(path: str | Path, *, plugin_registry: PluginRegistry | No
     users: list[DesiredGenericResource] = []
     settings: list[DesiredGenericResource] = []
     dns_records: list[DesiredDnsRecord] = []
+    source_versions: set[int] = set()
     for file_path in files:
         doc = _read_document(file_path)
         _validate_document_header(doc, path=str(file_path))
+        source_versions.add(int(doc["schemaVersion"]))
+        doc = _document_body(doc, path=str(file_path))
         for index, item in enumerate(doc.get("dns_records") or []):
             dns_records.append(DesiredDnsRecord.from_mapping(item, path=f"{file_path}.dns_records[{index}]"))
         for index, item in enumerate(doc.get("certificates") or []):
@@ -114,6 +132,7 @@ def load_desired_state(path: str | Path, *, plugin_registry: PluginRegistry | No
         settings=tuple(settings),
         dns_records=tuple(dns_records),
         source_files=tuple(str(file_path) for file_path in files),
+        schema_version=max(source_versions),
     )
     validate_desired_state_integrity(desired)
     return desired
@@ -149,8 +168,13 @@ def _read_document(path: Path) -> dict[str, Any]:
 def _validate_document_header(doc: dict[str, Any], *, path: str) -> None:
     if doc.get("apiVersion") != EXPECTED_API_VERSION:
         raise ValidationError(f"{path}.apiVersion must be {EXPECTED_API_VERSION!r}; run npmctl migrate if needed")
-    if doc.get("schemaVersion") != EXPECTED_SCHEMA_VERSION:
-        raise ValidationError(f"{path}.schemaVersion must be {EXPECTED_SCHEMA_VERSION}; run npmctl migrate if needed")
+    version = doc.get("schemaVersion")
+    if isinstance(version, bool) or not isinstance(version, int):
+        raise ValidationError(f"{path}.schemaVersion must be an integer")
+    BUILTIN_CONTRACTS.require_readable("DesiredState", version)
+    if version == 3 and doc.get("kind") != "DesiredState":
+        raise ValidationError(f"{path}.kind must be 'DesiredState' for schemaVersion 3")
+    body = _document_body(doc, path=path)
     for key in (
         "proxy_hosts",
         "certificates",
@@ -164,8 +188,24 @@ def _validate_document_header(doc: dict[str, Any], *, path: str) -> None:
         "plugin_resources",
         "external_certificates",
     ):
-        if key in doc and doc[key] is not None and not isinstance(doc[key], list):
+        if key in body and body[key] is not None and not isinstance(body[key], list):
             raise ValidationError(f"{path}.{key} must be a list")
+
+
+def _document_body(doc: dict[str, Any], *, path: str) -> dict[str, Any]:
+    if doc.get("schemaVersion") != 3:
+        return doc
+    spec = doc.get("spec")
+    if not isinstance(spec, dict):
+        raise ValidationError(f"{path}.spec must be an object")
+    unknown = sorted(set(spec) - set(_V3_KEYS))
+    if unknown:
+        raise ValidationError(f"{path}.spec contains unsupported fields: {', '.join(unknown)}")
+    return {
+        "apiVersion": doc["apiVersion"],
+        "schemaVersion": doc["schemaVersion"],
+        **{target: spec.get(source, []) for source, target in _V3_KEYS.items()},
+    }
 
 
 def _plugin_resource_from_mapping(raw: Any, *, plugins: PluginRegistry, path: str) -> DesiredGenericResource:

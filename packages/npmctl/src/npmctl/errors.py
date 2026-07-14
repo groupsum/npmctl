@@ -67,3 +67,29 @@ class CertificateSafetyError(ConflictError):
 
 class MigrationError(NpmctlError):
     """Desired-state schema migration failed."""
+
+
+class StructuredError(NpmctlError):
+    """Automation-safe failure with stable semantics."""
+
+    def __init__(self, code: str, message: str, *, retryable: bool = False, mutated: bool = False) -> None:
+        super().__init__(message)
+        self.code = code
+        self.retryable = retryable
+        self.mutated = mutated
+
+
+class ContractCompatibilityError(StructuredError, ValidationError):
+    """A versioned document is not compatible with the active registry."""
+
+
+class ArtifactError(StructuredError, ValidationError):
+    """An immutable artifact failed validation."""
+
+
+class LeaseError(StructuredError, ConflictError):
+    """A migration or provider mutation lease could not be acquired."""
+
+
+class RecoveryError(StructuredError, ConflictError):
+    """A requested recovery operation is not safe or available."""

@@ -51,8 +51,9 @@ def test_workflow_trigger_and_gate_semantics() -> None:
     assert "docs-ssot.yml" in release["jobs"]["gates"]["steps"][0]["run"]
     assert "python-matrix.yml" in release["jobs"]["gates"]["steps"][0]["run"]
     assert "live-npm-gate.yml" in release["jobs"]["gates"]["steps"][0]["run"]
-    bump_script = release["jobs"]["prepare"]["steps"][2]["run"]
-    commit_script = release["jobs"]["prepare"]["steps"][3]["run"]
+    prepare_steps = release["jobs"]["prepare"]["steps"]
+    bump_script = next(step["run"] for step in prepare_steps if step.get("name") == "Bump release metadata")
+    commit_script = next(step["run"] for step in prepare_steps if step.get("name") == "Commit release metadata")
     provider_pyprojects = [
         "packages/npmctl-cloudflare/pyproject.toml",
         "packages/npmctl-digitalocean/pyproject.toml",

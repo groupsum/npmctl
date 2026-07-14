@@ -5,4 +5,7 @@ documents migrate by adding an empty dns_records list and updating
 schemaVersion to 2.
 """
 
+from npmctl.migrations.builtin import BUILTIN_MIGRATIONS
+
 CURRENT = 2
+STEP = BUILTIN_MIGRATIONS.path("DesiredState", 1, 2)[0]

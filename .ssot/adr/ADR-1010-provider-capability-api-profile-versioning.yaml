@@ -1,0 +1,25 @@
+schema_version: "0.2.0"
+kind: "adr"
+id: "adr:1010"
+number: 1010
+slug: "provider-capability-api-profile-versioning"
+title: "Negotiate versioned provider capabilities and target API profiles"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Context: provider mutation models and NPM API shapes vary independently of npmctl. Decision: providers SHALL expose a versioned capability contract and NPM targets SHALL be identified by explicit API profiles. Plan and apply SHALL fail closed when required capabilities or the reviewed profile are unavailable."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:31:17Z"
+    note: "Proposed npmctl versioning and migration architecture."
+    status: "draft"
+  -
+    status: "accepted"
+    note: "Accepted with the npmctl 0.4 versioning and migration implementation."
+    at: "2026-07-14T03:26:14Z"
+references: []
+body: |-
+  Context: provider mutation models and NPM API shapes vary independently of npmctl. Decision: providers SHALL expose a versioned capability contract and NPM targets SHALL be identified by explicit API profiles. Plan and apply SHALL fail closed when required capabilities or the reviewed profile are unavailable.

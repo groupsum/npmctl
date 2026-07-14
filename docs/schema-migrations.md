@@ -12,3 +12,5 @@ Version 1 is the first public schema. Legacy documents without headers migrate b
 Version 2 adds provider-backed DNS records under `dns_records`. Migration from
 v1 to v2 preserves existing resources and adds `dns_records: []` when the
 document does not already declare DNS records.
+
+Version 3 introduces the `DesiredState` kind with `metadata` and `spec` envelopes and camel-case collection names. Migrations are adjacent (`v1 -> v2 -> v3`), reversible where an inverse is defined, and executed from reviewed manifests rather than as an implicit side effect of load or apply.

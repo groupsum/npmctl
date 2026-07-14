@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from npmctl.providers import DnsMutationContext, ProviderCapabilities, ProviderMutationResult, dns_records_digest
+
+from npmctl_route53.capabilities import CAPABILITIES
 from npmctl_route53.client import Route53Client
 from npmctl_route53.config import Route53Config
 
@@ -28,7 +31,15 @@ class Route53DnsProvider:
     def records(self, zone: str) -> tuple[dict[str, object], ...]:
         return tuple(_relative_record(zone, record.to_dict()) for record in self.client.records(zone))
 
-    def apply_records(self, zone: str, records: tuple[dict[str, object], ...]) -> None:
+    def capabilities(self) -> ProviderCapabilities:
+        return CAPABILITIES
+
+    def apply_records(
+        self,
+        zone: str,
+        records: tuple[dict[str, object], ...],
+        context: DnsMutationContext | None = None,
+    ) -> ProviderMutationResult:
         current = {_record_key(record): record for record in self.records(zone)}
         desired = {_record_key(record): _normalized_record(record) for record in records}
         for key, record in sorted(current.items()):
@@ -40,6 +51,14 @@ class Route53DnsProvider:
                 self.client.create_record(zone, **_record_payload(record))
             elif _record_changed(existing, record):
                 self.client.upsert_record(zone, **_record_payload(record))
+        observed = self.records(zone)
+        return ProviderMutationResult(
+            self.name,
+            context.operation_id if context else f"dns:{zone}",
+            None,
+            dns_records_digest(observed),
+            dns_records_digest(observed) == dns_records_digest(tuple(desired.values())),
+        )
 
 
 def _record_key(record: dict[str, Any]) -> tuple[str, str]:

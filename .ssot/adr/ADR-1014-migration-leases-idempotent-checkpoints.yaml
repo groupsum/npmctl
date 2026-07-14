@@ -1,0 +1,25 @@
+schema_version: "0.2.0"
+kind: "adr"
+id: "adr:1014"
+number: 1014
+slug: "migration-leases-idempotent-checkpoints"
+title: "Use leases idempotency keys and request correlation for migration execution"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Context: concurrent operators, timeouts, and lost provider responses can duplicate external effects. Decision: migrations SHALL acquire scoped execution leases, assign stable operation idempotency keys, correlate provider requests, reconcile ambiguous outcomes by readback, and resume only from durable verified checkpoints."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    at: "2026-07-14T01:45:33Z"
+    note: "Proposed follow-on decision for npmctl versioning and migration safety."
+    status: "draft"
+  -
+    status: "accepted"
+    note: "Accepted with the npmctl 0.4 versioning and migration implementation."
+    at: "2026-07-14T03:26:15Z"
+references: []
+body: |-
+  Context: concurrent operators, timeouts, and lost provider responses can duplicate external effects. Decision: migrations SHALL acquire scoped execution leases, assign stable operation idempotency keys, correlate provider requests, reconcile ambiguous outcomes by readback, and resume only from durable verified checkpoints.
