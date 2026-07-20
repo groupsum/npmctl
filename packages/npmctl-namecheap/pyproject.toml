@@ -48,6 +48,7 @@ keywords = [
 ]
 dependencies = [
   "npmctl>=0.4.0,<1",
+  "wyrmctl-namecheap>=0.4.0,<1",
   "requests>=2.32.0",
 ]
 

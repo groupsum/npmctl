@@ -61,11 +61,17 @@ def test_installed_console_script_smoke_in_clean_environment(tmp_path: Path) -> 
         text=True,
     )
 
+    runtime_env = os.environ.copy()
+    runtime_env["PYTHONPATH"] = os.pathsep.join(
+        [str(ROOT.parent / "wyrmctl" / "packages" / "wyrmctl" / "src"), *sys.path]
+    )
+
     result = subprocess.run(
         [str(python), "-m", "npmctl", "--version"],
         check=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        env=runtime_env,
     )
     assert result.stdout.strip().startswith("npmctl ")

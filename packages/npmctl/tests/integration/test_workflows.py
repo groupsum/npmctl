@@ -101,14 +101,15 @@ def test_workflow_trigger_and_gate_semantics() -> None:
 
 def test_governed_api_namespace_uses_npmctl_com() -> None:
     schema = json.loads((ROOT / "schemas" / "npmctl" / "desired-state.v2.schema.json").read_text(encoding="utf-8"))
-    loader = (ROOT / "packages" / "npmctl" / "src" / "npmctl" / "loader.py").read_text(encoding="utf-8")
-    model = (ROOT / "packages" / "npmctl" / "src" / "npmctl" / "models.py").read_text(encoding="utf-8")
+    facade = (ROOT / "packages" / "npmctl" / "src" / "npmctl" / "__init__.py").read_text(encoding="utf-8")
+    cli = (ROOT / "packages" / "npmctl" / "src" / "npmctl" / "cli.py").read_text(encoding="utf-8")
     legacy_domain = "npmctl" + ".io"
 
     assert schema["properties"]["apiVersion"]["const"] == "npmctl.com/v1"
     assert schema["properties"]["schemaVersion"]["const"] == 2
-    assert 'EXPECTED_API_VERSION = "npmctl.com/v1"' in loader
-    assert 'api_version: str = "npmctl.com/v1"' in model
+    assert "NPMCTL_PROFILE" in facade
+    assert "set_profile(NPMCTL_PROFILE)" in facade
+    assert "use_profile(NPMCTL_PROFILE)" in cli
 
     checked_paths = [
         ROOT / "README.md",

@@ -47,6 +47,7 @@ keywords = [
 ]
 dependencies = [
   "npmctl>=0.4.0,<1",
+  "wyrmctl-digitalocean>=0.4.0,<1",
   "requests>=2.32.0",
 ]
 

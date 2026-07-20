@@ -43,6 +43,12 @@ classifiers = [
 package = false
 
 [tool.uv.sources]
+wyrmctl = { path = "../wyrmctl/packages/wyrmctl", editable = false }
+wyrmctl-cloudflare = { path = "../wyrmctl/packages/wyrmctl-cloudflare", editable = false }
+wyrmctl-digitalocean = { path = "../wyrmctl/packages/wyrmctl-digitalocean", editable = false }
+wyrmctl-godaddy = { path = "../wyrmctl/packages/wyrmctl-godaddy", editable = false }
+wyrmctl-namecheap = { path = "../wyrmctl/packages/wyrmctl-namecheap", editable = false }
+wyrmctl-route53 = { path = "../wyrmctl/packages/wyrmctl-route53", editable = false }
 npmctl = { workspace = true }
 
 [tool.uv.workspace]

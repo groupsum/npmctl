@@ -48,6 +48,7 @@ keywords = [
 ]
 dependencies = [
   "npmctl>=0.4.0,<1",
+  "wyrmctl-route53>=0.4.0,<1",
   "boto3>=1.34.0",
 ]
 
