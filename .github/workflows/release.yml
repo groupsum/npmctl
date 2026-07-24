@@ -270,26 +270,20 @@ jobs:
 
       - name: Publish distributions to PyPI with Trusted Publishing
         id: pypi-trusted-publishing
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: cobycloud/actions/actions/pypi-trusted-publish@main
         if: inputs.publish_pypi
         continue-on-error: true
-        env:
-          DOCKER_API_VERSION: "1.43"
         with:
           packages-dir: dist
           skip-existing: true
 
       - name: Publish distributions to PyPI with API token fallback
         if: inputs.publish_pypi && steps.pypi-trusted-publishing.outcome == 'failure'
-        env:
-          DOCKER_API_VERSION: "1.43"
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: cobycloud/actions/actions/pypi-token-publish@main
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+          api-token: ${{ secrets.PYPI_API_TOKEN }}
           packages-dir: dist
           skip-existing: true
-          attestations: false
 
       - uses: softprops/action-gh-release@v2
         if: >
