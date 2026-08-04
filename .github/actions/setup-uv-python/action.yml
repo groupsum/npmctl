@@ -6,6 +6,10 @@ inputs:
     description: Python version
     required: false
     default: "3.14"
+  wyrmctl-commit:
+    description: Immutable public Wyrmctl source commit used by the workspace lockfile
+    required: false
+    default: "6c841ae783447f7f540a3884ce167da9c71fc700"
   enable-cache:
     description: Enable uv cache
     required: false
@@ -13,6 +17,22 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Prepare pinned public Wyrmctl sources
+      shell: bash
+      env:
+        WYRMCTL_COMMIT: ${{ inputs.wyrmctl-commit }}
+      run: |
+        set -euo pipefail
+        dependency_path="${RUNNER_TEMP}/npmctl-wyrmctl-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+        source_path="${GITHUB_WORKSPACE}/../wyrmctl"
+        test ! -e "${dependency_path}"
+        test ! -e "${source_path}"
+        git init --quiet "${dependency_path}"
+        git -C "${dependency_path}" remote add origin https://github.com/groupsum/wyrmctl.git
+        git -C "${dependency_path}" fetch --quiet --depth 1 origin "${WYRMCTL_COMMIT}"
+        git -C "${dependency_path}" checkout --quiet --detach FETCH_HEAD
+        test "$(git -C "${dependency_path}" rev-parse HEAD)" = "${WYRMCTL_COMMIT}"
+        ln -s "${dependency_path}" "${source_path}"
     - uses: astral-sh/setup-uv@v7
       with:
         enable-cache: ${{ inputs.enable-cache }}
