@@ -26,7 +26,11 @@ runs:
         dependency_path="${RUNNER_TEMP}/npmctl-wyrmctl-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
         source_path="${GITHUB_WORKSPACE}/../wyrmctl"
         test ! -e "${dependency_path}"
-        test ! -e "${source_path}"
+        if [[ -L "${source_path}" ]]; then
+          rm -- "${source_path}"
+        else
+          test ! -e "${source_path}"
+        fi
         git init --quiet "${dependency_path}"
         git -C "${dependency_path}" remote add origin https://github.com/groupsum/wyrmctl.git
         git -C "${dependency_path}" fetch --quiet --depth 1 origin "${WYRMCTL_COMMIT}"
