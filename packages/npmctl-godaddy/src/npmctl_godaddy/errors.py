@@ -1,1 +1,1 @@
-from wyrmctl_godaddy.errors import *
+from wyrmctl_godaddy.errors import *  # noqa: F403

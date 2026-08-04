@@ -1,1 +1,1 @@
-from wyrmctl_digitalocean import *
+from wyrmctl_digitalocean import *  # noqa: F403

@@ -1,1 +1,1 @@
-from wyrmctl_cloudflare.client import *
+from wyrmctl_cloudflare.client import *  # noqa: F403

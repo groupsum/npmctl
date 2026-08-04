@@ -1,1 +1,1 @@
-from wyrmctl_cloudflare.models import *
+from wyrmctl_cloudflare.models import *  # noqa: F403

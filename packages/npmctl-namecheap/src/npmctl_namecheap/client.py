@@ -1,1 +1,1 @@
-from wyrmctl_namecheap.client import *
+from wyrmctl_namecheap.client import *  # noqa: F403

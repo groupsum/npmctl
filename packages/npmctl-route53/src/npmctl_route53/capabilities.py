@@ -1,1 +1,1 @@
-from wyrmctl_route53.capabilities import *
+from wyrmctl_route53.capabilities import *  # noqa: F403
