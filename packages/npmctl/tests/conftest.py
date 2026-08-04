@@ -11,6 +11,11 @@ import pytest
 import yaml
 
 
+@pytest.fixture(autouse=True)
+def isolate_certificate_issuance_state(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("NPMCTL_CERTIFICATE_STATE_DIR", str(tmp_path / "certificate-state"))
+
+
 @pytest.fixture
 def desired_doc() -> dict[str, Any]:
     return {
