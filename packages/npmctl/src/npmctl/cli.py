@@ -14,6 +14,7 @@ def _plugin_registry_cls():
     global _PLUGIN_REGISTRY_IMPL
     if _PLUGIN_REGISTRY_IMPL is None:
         from wyrmctl.plugins import PluginRegistry
+
         _PLUGIN_REGISTRY_IMPL = PluginRegistry
     return _PLUGIN_REGISTRY_IMPL
 
@@ -22,6 +23,7 @@ def _npm_client_cls():
     global NpmClient
     if NpmClient is None:
         from wyrmctl.client import NpmClient as _NpmClient
+
         NpmClient = _NpmClient
     return NpmClient
 
