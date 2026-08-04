@@ -68,14 +68,14 @@ def test_workflow_trigger_and_gate_semantics() -> None:
     assert release["jobs"]["publish"]["needs"] == ["prepare", "build"]
     assert release["jobs"]["publish"]["environment"] == "pypi"
     publish_steps = release["jobs"]["publish"]["steps"]
-    pypi_steps = [step for step in publish_steps if step.get("uses", "").startswith("pypa/")]
+    pypi_steps = [step for step in publish_steps if "pypi" in step.get("uses", "")]
     assert len(pypi_steps) == 2
     trusted_publishing_step, token_fallback_step = pypi_steps
     assert trusted_publishing_step["id"] == "pypi-trusted-publishing"
     assert trusted_publishing_step["continue-on-error"] == "true"
     assert trusted_publishing_step["with"]["skip-existing"] == "true"
     assert "steps.pypi-trusted-publishing.outcome == 'failure'" in token_fallback_step["if"]
-    assert token_fallback_step["with"]["password"] == "${{ secrets.PYPI_API_TOKEN }}"
+    assert token_fallback_step["with"]["api-token"] == "${{ secrets.PYPI_API_TOKEN }}"
     assert token_fallback_step["with"]["skip-existing"] == "true"
     gh_release_index = next(
         index for index, step in enumerate(publish_steps) if step.get("uses", "").startswith("softprops/")

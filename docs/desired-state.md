@@ -80,3 +80,9 @@ externalCertificates:
     domain_names: [example.com]
     meta: {managed_by: npmctl, owner: workload-a, resource_id: cert.example}
 ```
+
+## QUIC and WebTransport capability boundary
+
+Nginx Proxy Manager stream resources can forward UDP by port, but they cannot select encrypted QUIC flows by hostname. npmctl therefore fails closed when schema v3 contains `quicPassthroughHosts` and reports that Portwyrm with Wyrmctl is required. Do not create one NPM UDP/443 stream per application: those streams conflict on the same socket and cannot isolate SNI.
+
+Use npmctl for certificates and TCP HTTPS proxy hosts. Use Wyrmctl to create the independent Portwyrm hostname routes. The application backend, not NPM or Portwyrm, terminates TLS/QUIC/WebTransport.

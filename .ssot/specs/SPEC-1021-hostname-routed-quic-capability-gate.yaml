@@ -1,0 +1,24 @@
+schema_version: "0.2.0"
+kind: "spec"
+id: "spc:1021"
+number: 1021
+slug: "hostname-routed-quic-capability-gate"
+title: "Hostname-routed QUIC capability gate"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "npmctl SHALL reject desired state or provider plans that require hostname-routed QUIC passthrough because Nginx Proxy Manager cannot supply that capability. The diagnostic SHALL explain the missing NPM capability and recommend Portwyrm with Wyrmctl. npmctl SHALL NOT create competing UDP/443 stream resources and SHALL continue to reconcile TCP HTTPS resources independently."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    status: "accepted"
+    note: "Accepted for the NPM fail-closed boundary."
+    at: "2026-08-04T03:44:40Z"
+references: []
+body: |-
+  npmctl SHALL reject desired state or provider plans that require hostname-routed QUIC passthrough because Nginx Proxy Manager cannot supply that capability. The diagnostic SHALL explain the missing NPM capability and recommend Portwyrm with Wyrmctl. npmctl SHALL NOT create competing UDP/443 stream resources and SHALL continue to reconcile TCP HTTPS resources independently.
+spec_kind: "normative"
+adr_ids:
+  - "adr:1016"

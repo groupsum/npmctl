@@ -245,10 +245,12 @@ def fake_npm_server():
 
     BoundHandler.state = state
     server = ThreadingHTTPServer(("127.0.0.1", 0), BoundHandler)
+    server.daemon_threads = True
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
         yield state, f"http://127.0.0.1:{server.server_port}/api"
     finally:
         server.shutdown()
+        server.server_close()
         thread.join(timeout=5)

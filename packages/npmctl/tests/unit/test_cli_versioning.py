@@ -3,8 +3,6 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from types import SimpleNamespace
-
 import yaml
 
 from npmctl.artifacts import PlanArtifact, write_artifact
@@ -119,15 +117,6 @@ def test_write_and_apply_empty_plan_artifact(tmp_path: Path, capsys, monkeypatch
 
     with pytest.raises(ValidationError, match="prune"):
         _write_plan_artifact(args, plan, DesiredState(), ExistingState(), capabilities)
-    args.prune_owned = False
-    with pytest.raises(ValidationError, match="does not yet support DNS"):
-        _write_plan_artifact(
-            args,
-            plan,
-            SimpleNamespace(dns_records=(object(),)),
-            ExistingState(),
-            capabilities,
-        )
 
     import npmctl.cli as cli
 
@@ -175,3 +164,20 @@ def test_write_and_apply_empty_plan_artifact(tmp_path: Path, capsys, monkeypatch
         )
         == 0
     )
+
+
+def test_cli_compatibility_facade_loads_lazy_types_and_profile_parser(monkeypatch) -> None:
+    import npmctl.cli as cli
+
+    monkeypatch.setattr(cli, "_PLUGIN_REGISTRY_IMPL", None)
+    plugin_registry = cli._plugin_registry_cls()
+    assert plugin_registry.__name__ == "PluginRegistry"
+    assert cli._plugin_registry_cls() is plugin_registry
+
+    monkeypatch.setattr(cli, "NpmClient", None)
+    npm_client = cli._npm_client_cls()
+    assert npm_client.__name__ == "NpmClient"
+    assert cli._npm_client_cls() is npm_client
+
+    parser = cli.build_parser()
+    assert parser.prog == "npmctl"

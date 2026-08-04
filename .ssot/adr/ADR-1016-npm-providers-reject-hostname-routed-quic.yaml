@@ -1,0 +1,21 @@
+schema_version: "0.2.0"
+kind: "adr"
+id: "adr:1016"
+number: 1016
+slug: "npm-providers-reject-hostname-routed-quic"
+title: "NPM providers reject hostname-routed QUIC"
+status: "accepted"
+origin: "repo-local"
+decision_date: null
+tags: []
+summary: "Context: Nginx Proxy Manager UDP streams are port-routed and cannot isolate multiple QUIC applications sharing UDP/443 by hostname. Decision: npmctl identifies quicPassthroughHosts as unsupported on NPM profiles, fails closed before mutation, and recommends Portwyrm with Wyrmctl. Consequences: npmctl continues to own certificates and TCP HTTPS proxy hosts while Wyrmctl independently controls opaque UDP QUIC routes."
+supersedes: []
+superseded_by: []
+status_notes:
+  -
+    status: "accepted"
+    note: "Accepted for npmctl 0.4.1 capability gating."
+    at: "2026-08-04T03:44:36Z"
+references: []
+body: |-
+  Context: Nginx Proxy Manager UDP streams are port-routed and cannot isolate multiple QUIC applications sharing UDP/443 by hostname. Decision: npmctl identifies quicPassthroughHosts as unsupported on NPM profiles, fails closed before mutation, and recommends Portwyrm with Wyrmctl. Consequences: npmctl continues to own certificates and TCP HTTPS proxy hosts while Wyrmctl independently controls opaque UDP QUIC routes.

@@ -1,6 +1,6 @@
 [project]
 name = "npmctl-workspace"
-version = "0.4.0"
+version = "0.4.1"
 description = "Workspace root for npmctl, an owner-scoped Nginx Proxy Manager controller."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -43,7 +43,7 @@ classifiers = [
 package = false
 
 [tool.uv.sources]
-wyrmctl = { path = "../wyrmctl/packages/wyrmctl", editable = false }
+wyrmctl = { path = "../wyrmctl/packages/wyrmctl", editable = true }
 wyrmctl-cloudflare = { path = "../wyrmctl/packages/wyrmctl-cloudflare", editable = false }
 wyrmctl-digitalocean = { path = "../wyrmctl/packages/wyrmctl-digitalocean", editable = false }
 wyrmctl-godaddy = { path = "../wyrmctl/packages/wyrmctl-godaddy", editable = false }
