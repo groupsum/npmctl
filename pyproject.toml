@@ -102,7 +102,11 @@ ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "packages/npmctl/tests/**/*.py" = ["PT011", "RUF012", "PLC0415"]
-"packages/npmctl-*/src/**/*.py" = ["F403"]
+"packages/npmctl-cloudflare/src/**/*.py" = ["F403"]
+"packages/npmctl-digitalocean/src/**/*.py" = ["F403"]
+"packages/npmctl-godaddy/src/**/*.py" = ["F403"]
+"packages/npmctl-namecheap/src/**/*.py" = ["F403"]
+"packages/npmctl-route53/src/**/*.py" = ["F403"]
 
 [tool.ruff.format]
 quote-style = "double"
